@@ -4,7 +4,9 @@
 
 **Goal:** Ship a static, auto-updating product catalog site (wall clocks, same range as sold on Wildberries) with per-product pages, search, and a no-backend order form, deployed free on GitHub Pages and rebuilt daily by GitHub Actions.
 
-**Architecture:** A Node.js build script pulls product rows from an existing Google Sheets Web App, filters to items with a real WB article number, fetches real photo URLs from the WB Content API, and renders fully-formed static HTML (index + one page per product) plus `sitemap.xml`/`robots.txt`. GitHub Actions runs this on a schedule and publishes the output to GitHub Pages. No server, no database, no npm dependencies beyond Node's built-ins.
+**Architecture:** A Node.js build script pulls the whole product catalog (name, description, photo) from the WB Content API and renders fully-formed static HTML (index + one page per product) plus `sitemap.xml`/`robots.txt`. GitHub Actions runs this on a schedule and publishes the output to GitHub Pages. No server, no database, no npm dependencies beyond Node's built-ins.
+
+> **Изменение от 2026-08-13 (обязательно к прочтению перед задачами 5-10):** гугл-таблица убрана из сборки — WB API отдаёт название, описание и фото одним ответом (проверено живым запросом на 300 карточках). Задачи 1 и 2 (`src/sheets.js`, `src/filter.js`) выполнены и затем **удалены** — не восстанавливать. Задача 4 выполнена и переписана как `src/wbCatalog.js` → `fetchAllClockProducts(token, {fetchFn, pageSize})` возвращает готовый `Product[]` `{nmId, name, description, photo}`. Секрет остался один — `WB_API_TOKEN`. Задачи 3, 5, 6, 7, 9, 10 не менялись; задача 8 (`build.js`) — см. исправленный код в самой задаче.
 
 **Tech Stack:** Node.js (>=20, global `fetch`, `node:test`), plain HTML/CSS/vanilla JS (ES modules, no bundler, no framework), GitHub Actions, GitHub Pages.
 
@@ -15,9 +17,9 @@
 - Contact constants: phone/WhatsApp `+79266642121`, Telegram `@Podarki190`.
 - Price is always static and identical for every product: original `7000 ₽` (strikethrough), sale `1890 ₽`, caption "Доставка по всей России Бесплатная". Never read price from the sheet.
 - Product page URL pattern: `/tovar/<Артикул WB>/` (nmID as slug — guaranteed unique, no transliteration).
-- Catalog inclusion rule: a row is included **only if** `Артикул WB` is a valid number **and** the WB Content API returns at least one photo for that nmID.
+- Catalog inclusion rule: a product is included **only if** the WB Content API returns it under subjectID 625 **and** it has at least one photo.
 - Order form fields: ФИО, телефон, город и адрес доставки (free text only — no CDEK/Yandex pickup-point widgets in this phase, see spec).
-- Never write real secrets (Google Sheets Web App secret, WB API token) into any file that gets committed. They are consumed only via environment variables / GitHub Actions secrets at build time.
+- Never write the WB API token into any file that gets committed. It is consumed only via environment variable / GitHub Actions secret at build time (locally: gitignored `.env`).
 - Spec: `docs/superpowers/specs/2026-08-11-wall-clocks-catalog-design.md` — this plan implements it in full except the explicitly deferred CDEK/Yandex pickup widgets.
 
 ---
@@ -29,18 +31,14 @@ wall-clocks-catalog/
   package.json
   .gitignore
   src/
-    sheets.js       # fetch rows from Google Sheets Web App
-    filter.js        # decide which rows are catalog-ready
     links.js          # contact links, price constants, message builders (shared Node+browser)
-    wbPhotos.js         # fetch real photo URLs from WB Content API
+    wbCatalog.js        # fetch the whole catalog (name/description/photo) from WB Content API
     render.js             # HTML rendering (index page, product page)
     sitemap.js              # sitemap.xml + robots.txt rendering
     build.js                 # orchestrates everything, writes dist/
   test/
-    sheets.test.js
-    filter.test.js
     links.test.js
-    wbPhotos.test.js
+    wbCatalog.test.js
     render.test.js
     sitemap.test.js
     build.test.js
@@ -59,498 +57,13 @@ wall-clocks-catalog/
 
 ---
 
-### Task 1: Project scaffold + Google Sheets client
+### Задачи 1-4 — ВЫПОЛНЕНО (не переделывать)
 
-**Files:**
-- Create: `package.json`
-- Create: `.gitignore`
-- Create: `src/sheets.js`
-- Test: `test/sheets.test.js`
+- **Задача 1** (`src/sheets.js`) и **Задача 2** (`src/filter.js`) — были сделаны, затем удалены вместе с тестами: гугл-таблица выпилена из сборки (см. «Изменение от 2026-08-13» выше). Код остался в истории git, коммиты `72d7ff2` и `6f940ac`. `package.json` и `.gitignore` из задачи 1 остаются на месте.
+- **Задача 3** — `src/links.js` + `test/links.test.js`, 9 тестов, коммит `6b1f519`. Контакты, цены, сборка сообщений WhatsApp/Telegram.
+- **Задача 4** — фото и тексты с WB. Форма ответа API проверена живым запросом; итоговый модуль — `src/wbCatalog.js` + `test/wbCatalog.test.js`, 6 тестов: `fetchAllClockProducts(token, {fetchFn, pageSize})` → `Product[]` `{nmId, name, description, photo}`.
 
-**Interfaces:**
-- Produces: `fetchSheetRows({ webAppUrl: string, secret: string, fetchFn?: typeof fetch }): Promise<Array<Record<string, string|number>>>` — throws on failure. Later tasks (`build.js`) call this to get raw sheet rows.
-
-- [ ] **Step 1: Create `package.json`**
-
-```json
-{
-  "name": "wall-clocks-catalog",
-  "version": "1.0.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "test": "node --test",
-    "build": "node src/build.js"
-  }
-}
-```
-
-- [ ] **Step 2: Create `.gitignore`**
-
-```
-dist/
-node_modules/
-.env
-```
-
-- [ ] **Step 3: Write the failing test for `sheets.js`**
-
-The Apps Script Web App always responds to POST with a `302` redirect whose `Location` header points at the actual JSON payload (confirmed working with `redirect: 'manual'` against the real endpoint). Test this with an injected fake `fetchFn` — no real network call.
-
-```js
-// test/sheets.test.js
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
-import { fetchSheetRows } from '../src/sheets.js';
-
-test('fetchSheetRows follows the Apps Script redirect and returns rows', async () => {
-  const calls = [];
-  const fetchFn = async (url, opts) => {
-    calls.push({ url, opts });
-    if (calls.length === 1) {
-      assert.equal(opts.method, 'POST');
-      const body = JSON.parse(opts.body);
-      assert.equal(body.secret, 'test-secret');
-      assert.equal(body.action, 'read_rows');
-      return new Response(null, {
-        status: 302,
-        headers: { location: 'https://example.com/data' },
-      });
-    }
-    return new Response(JSON.stringify({ ok: true, rows: [{ Наименование: 'Часы X' }] }), {
-      status: 200,
-    });
-  };
-
-  const rows = await fetchSheetRows({ webAppUrl: 'https://script.google.com/x/exec', secret: 'test-secret', fetchFn });
-  assert.equal(rows.length, 1);
-  assert.equal(rows[0]['Наименование'], 'Часы X');
-  assert.equal(calls.length, 2);
-});
-
-test('fetchSheetRows throws if the webapp does not redirect', async () => {
-  const fetchFn = async () => new Response('oops', { status: 500 });
-  await assert.rejects(() =>
-    fetchSheetRows({ webAppUrl: 'https://script.google.com/x/exec', secret: 's', fetchFn })
-  );
-});
-
-test('fetchSheetRows throws if the payload reports ok:false', async () => {
-  const fetchFn = async (url, opts) => {
-    if (!opts) return new Response(JSON.stringify({ ok: false, error: 'bad secret' }), { status: 200 });
-    return new Response(null, { status: 302, headers: { location: 'https://example.com/data' } });
-  };
-  await assert.rejects(() =>
-    fetchSheetRows({ webAppUrl: 'https://script.google.com/x/exec', secret: 's', fetchFn })
-  );
-});
-```
-
-- [ ] **Step 4: Run test to verify it fails**
-
-Run: `node --test test/sheets.test.js`
-Expected: FAIL — `src/sheets.js` does not exist yet.
-
-- [ ] **Step 5: Implement `src/sheets.js`**
-
-```js
-export async function fetchSheetRows({ webAppUrl, secret, fetchFn = fetch }) {
-  const postResp = await fetchFn(webAppUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ secret, action: 'read_rows' }),
-    redirect: 'manual',
-  });
-
-  const location = postResp.headers.get('location');
-  if (!location) {
-    throw new Error(`Sheets webapp did not redirect (status ${postResp.status})`);
-  }
-
-  const dataResp = await fetchFn(location);
-  if (!dataResp.ok) {
-    throw new Error(`Sheets webapp data fetch failed: ${dataResp.status}`);
-  }
-
-  const data = await dataResp.json();
-  if (!data.ok) {
-    throw new Error(`Sheets webapp returned error: ${JSON.stringify(data)}`);
-  }
-
-  return data.rows;
-}
-```
-
-- [ ] **Step 6: Run test to verify it passes**
-
-Run: `node --test test/sheets.test.js`
-Expected: PASS (3 tests)
-
-- [ ] **Step 7: Commit**
-
-```bash
-git add package.json .gitignore src/sheets.js test/sheets.test.js
-git commit -m "Add Google Sheets Web App client"
-```
-
----
-
-### Task 2: Catalog inclusion filter
-
-**Files:**
-- Create: `src/filter.js`
-- Test: `test/filter.test.js`
-
-**Interfaces:**
-- Consumes: raw row objects as returned by `fetchSheetRows` (Task 1) — keys are exact Russian column names (`'Артикул WB'`, `'Наименование'`, `'Описание'`).
-- Produces: `isReadyProduct(row): boolean`; `toProductStub(row): { nmId: number, name: string, description: string }`. Used by `build.js` (Task 8).
-
-- [ ] **Step 1: Write the failing test**
-
-```js
-// test/filter.test.js
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
-import { isReadyProduct, toProductStub } from '../src/filter.js';
-
-test('isReadyProduct accepts a row with a numeric WB article', () => {
-  assert.equal(isReadyProduct({ 'Артикул WB': 1259100136 }), true);
-});
-
-test('isReadyProduct rejects missing, non-numeric or error-value articles', () => {
-  assert.equal(isReadyProduct({ 'Артикул WB': '' }), false);
-  assert.equal(isReadyProduct({ 'Артикул WB': '#N/A' }), false);
-  assert.equal(isReadyProduct({ 'Артикул WB': '#VALUE!' }), false);
-  assert.equal(isReadyProduct({}), false);
-});
-
-test('toProductStub extracts name/description and normalizes the id to a number', () => {
-  const stub = toProductStub({
-    'Артикул WB': '1259100136',
-    'Наименование': 'Часы настенные "Локомотив Ярославль"',
-    'Описание': 'Стильные часы...',
-  });
-  assert.deepEqual(stub, {
-    nmId: 1259100136,
-    name: 'Часы настенные "Локомотив Ярославль"',
-    description: 'Стильные часы...',
-  });
-});
-
-test('toProductStub defaults missing text fields to empty string', () => {
-  const stub = toProductStub({ 'Артикул WB': 1 });
-  assert.equal(stub.name, '');
-  assert.equal(stub.description, '');
-});
-```
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `node --test test/filter.test.js`
-Expected: FAIL — module not found.
-
-- [ ] **Step 3: Implement `src/filter.js`**
-
-```js
-export function isReadyProduct(row) {
-  const nmId = Number(row['Артикул WB']);
-  return Number.isFinite(nmId) && nmId > 0;
-}
-
-export function toProductStub(row) {
-  return {
-    nmId: Number(row['Артикул WB']),
-    name: row['Наименование'] || '',
-    description: row['Описание'] || '',
-  };
-}
-```
-
-- [ ] **Step 4: Run test to verify it passes**
-
-Run: `node --test test/filter.test.js`
-Expected: PASS (4 tests)
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add src/filter.js test/filter.test.js
-git commit -m "Add catalog inclusion filter"
-```
-
----
-
-### Task 3: Links, price constants, and message builders
-
-**Files:**
-- Create: `src/links.js`
-- Test: `test/links.test.js`
-
-**Interfaces:**
-- Produces: `PHONE`, `TELEGRAM`, `ORIGINAL_PRICE`, `SALE_PRICE`, `SHIPPING_TEXT`, `buildTelLink()`, `buildWhatsAppLink(message)`, `buildTelegramLink()`, `buildWbLink(nmId)`, `buildCardWhatsAppMessage(name, nmId)`, `buildOrderMessage({ name, nmId, fio, phone, address })`, `truncate(text, maxLen)`.
-- This module has **zero Node-specific APIs** (no `fs`, no `process`) so it can be copied verbatim into `dist/` and imported directly by browser code (Task 6) without a bundler.
-
-- [ ] **Step 1: Write the failing test**
-
-```js
-// test/links.test.js
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
-import {
-  PHONE, TELEGRAM, ORIGINAL_PRICE, SALE_PRICE,
-  buildTelLink, buildWhatsAppLink, buildTelegramLink, buildWbLink,
-  buildCardWhatsAppMessage, buildOrderMessage, truncate,
-} from '../src/links.js';
-
-test('constants match the seller contact info and fixed pricing', () => {
-  assert.equal(PHONE, '+79266642121');
-  assert.equal(TELEGRAM, 'Podarki190');
-  assert.equal(ORIGINAL_PRICE, 7000);
-  assert.equal(SALE_PRICE, 1890);
-});
-
-test('buildTelLink produces a tel: link', () => {
-  assert.equal(buildTelLink(), 'tel:+79266642121');
-});
-
-test('buildWhatsAppLink url-encodes the message and strips the leading +', () => {
-  const link = buildWhatsAppLink('Привет мир');
-  assert.ok(link.startsWith('https://wa.me/79266642121?text='));
-  assert.ok(link.includes(encodeURIComponent('Привет мир')));
-});
-
-test('buildTelegramLink points at the seller username', () => {
-  assert.equal(buildTelegramLink(), 'https://t.me/Podarki190');
-});
-
-test('buildWbLink builds the product detail URL from the nmID', () => {
-  assert.equal(buildWbLink(1259100136), 'https://www.wildberries.ru/catalog/1259100136/detail.aspx');
-});
-
-test('buildCardWhatsAppMessage names the product and article', () => {
-  const msg = buildCardWhatsAppMessage('Часы "Ярославль"', 1259100136);
-  assert.match(msg, /Часы "Ярославль"/);
-  assert.match(msg, /1259100136/);
-});
-
-test('buildOrderMessage includes all order fields', () => {
-  const msg = buildOrderMessage({
-    name: 'Часы "Ярославль"', nmId: 1259100136,
-    fio: 'Иванов Иван', phone: '+79991234567', address: 'Клин, ул. Ленина 1',
-  });
-  assert.match(msg, /Часы "Ярославль"/);
-  assert.match(msg, /1259100136/);
-  assert.match(msg, /Иванов Иван/);
-  assert.match(msg, /\+79991234567/);
-  assert.match(msg, /Клин, ул\. Ленина 1/);
-});
-
-test('truncate leaves short text untouched', () => {
-  assert.equal(truncate('коротко', 150), 'коротко');
-});
-
-test('truncate cuts long text at a word boundary and adds an ellipsis', () => {
-  const text = 'а'.repeat(100) + ' ' + 'б'.repeat(100);
-  const result = truncate(text, 105);
-  assert.ok(result.length <= 106);
-  assert.ok(result.endsWith('…'));
-  assert.ok(!result.includes('б'));
-});
-```
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `node --test test/links.test.js`
-Expected: FAIL — module not found.
-
-- [ ] **Step 3: Implement `src/links.js`**
-
-```js
-export const PHONE = '+79266642121';
-export const TELEGRAM = 'Podarki190';
-export const ORIGINAL_PRICE = 7000;
-export const SALE_PRICE = 1890;
-export const SHIPPING_TEXT = 'Доставка по всей России Бесплатная';
-
-export function buildTelLink() {
-  return `tel:${PHONE}`;
-}
-
-export function buildWhatsAppLink(message) {
-  return `https://wa.me/${PHONE.replace('+', '')}?text=${encodeURIComponent(message)}`;
-}
-
-export function buildTelegramLink() {
-  return `https://t.me/${TELEGRAM}`;
-}
-
-export function buildWbLink(nmId) {
-  return `https://www.wildberries.ru/catalog/${nmId}/detail.aspx`;
-}
-
-export function buildCardWhatsAppMessage(name, nmId) {
-  return `Здравствуйте! Интересуют часы «${name}» (арт. ${nmId})`;
-}
-
-export function buildOrderMessage({ name, nmId, fio, phone, address }) {
-  return [
-    `Здравствуйте! Хочу заказать часы «${name}» (арт. ${nmId}).`,
-    `ФИО: ${fio}`,
-    `Телефон: ${phone}`,
-    `Город/адрес доставки: ${address}`,
-  ].join('\n');
-}
-
-export function truncate(text, maxLen) {
-  if (text.length <= maxLen) return text;
-  const cut = text.slice(0, maxLen);
-  const lastSpace = cut.lastIndexOf(' ');
-  return (lastSpace > 0 ? cut.slice(0, lastSpace) : cut) + '…';
-}
-```
-
-- [ ] **Step 4: Run test to verify it passes**
-
-Run: `node --test test/links.test.js`
-Expected: PASS (9 tests)
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add src/links.js test/links.test.js
-git commit -m "Add contact links, pricing constants and message builders"
-```
-
----
-
-### Task 4: WB Content API photo fetcher
-
-**Prerequisite:** the real WB Content API token (user-provided, category "Контент"). Needed live only for Step 1 verification below — the committed code never contains it.
-
-**Files:**
-- Create: `src/wbPhotos.js`
-- Test: `test/wbPhotos.test.js`
-
-**Interfaces:**
-- Produces: `fetchAllClockPhotos(token: string, { fetchFn? } = {}): Promise<Map<number, string>>` mapping nmID → first photo URL. Used by `build.js` (Task 8).
-
-- [ ] **Step 1: Verify the real WB Content API response shape**
-
-Before writing the parser, confirm the actual field names against the live API (the shape below is the documented WB Content API v2 `cards/list` contract, but WB has changed field names before — verify, don't assume). With the real token available as `$WB_TOKEN`:
-
-```bash
-curl -s -X POST "https://content-api.wildberries.ru/content/v2/get/cards/list" \
-  -H "Authorization: $WB_TOKEN" -H "Content-Type: application/json" \
-  -d '{"settings":{"cursor":{"limit":2},"filter":{"withPhoto":1,"objectIDs":[625]}}}' | head -c 2000
-```
-
-Confirm the response has a top-level `cards` array, each card has `nmID` (number) and `photos` (array of objects with a `big` URL field), and that paging info needed to fetch the next page is present (either an echoed `cursor` with `total`, or the last card's `nmID`/`updatedAt` used as the next page's cursor — WB's documented pattern is the latter). **Adjust the implementation in Step 3 to match what you actually observe**, then proceed.
-
-- [ ] **Step 2: Write the failing test (against the confirmed shape, via injected `fetchFn`)**
-
-```js
-// test/wbPhotos.test.js
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
-import { fetchAllClockPhotos } from '../src/wbPhotos.js';
-
-test('fetchAllClockPhotos maps nmID to the first photo and paginates until a short page', async () => {
-  const calls = [];
-  const page1 = {
-    cards: Array.from({ length: 2 }, (_, i) => ({
-      nmID: 100 + i,
-      updatedAt: `2026-08-0${i + 1}T00:00:00Z`,
-      photos: [{ big: `https://basket.wbbasket.ru/${100 + i}/big/1.jpg` }],
-    })),
-  };
-  const page2 = { cards: [] };
-
-  const fetchFn = async (url, opts) => {
-    calls.push(JSON.parse(opts.body));
-    assert.equal(opts.headers.Authorization, 'test-token');
-    return new Response(JSON.stringify(calls.length === 1 ? page1 : page2), { status: 200 });
-  };
-
-  const photos = await fetchAllClockPhotos('test-token', { fetchFn, pageSize: 2 });
-  assert.equal(photos.get(100), 'https://basket.wbbasket.ru/100/big/1.jpg');
-  assert.equal(photos.get(101), 'https://basket.wbbasket.ru/101/big/1.jpg');
-  assert.equal(calls.length, 2);
-});
-
-test('fetchAllClockPhotos skips cards with no photos', async () => {
-  const fetchFn = async () =>
-    new Response(JSON.stringify({ cards: [{ nmID: 1, photos: [] }] }), { status: 200 });
-  const photos = await fetchAllClockPhotos('t', { fetchFn, pageSize: 100 });
-  assert.equal(photos.size, 0);
-});
-
-test('fetchAllClockPhotos throws with a readable message on API error', async () => {
-  const fetchFn = async () => new Response('rate limited', { status: 429 });
-  await assert.rejects(
-    () => fetchAllClockPhotos('t', { fetchFn }),
-    /429/
-  );
-});
-```
-
-- [ ] **Step 3: Run test to verify it fails**
-
-Run: `node --test test/wbPhotos.test.js`
-Expected: FAIL — module not found.
-
-- [ ] **Step 4: Implement `src/wbPhotos.js`**
-
-(Written against the shape confirmed in Step 1 — this is the starting point, reconcile field names with what you actually observed.)
-
-```js
-const WB_API_BASE = 'https://content-api.wildberries.ru';
-const CLOCKS_SUBJECT_ID = 625; // "Часы настенные" — confirmed in project memory
-
-export async function fetchAllClockPhotos(token, { fetchFn = fetch, pageSize = 100 } = {}) {
-  const result = new Map();
-  let cursor = { limit: pageSize };
-
-  while (true) {
-    const resp = await fetchFn(`${WB_API_BASE}/content/v2/get/cards/list`, {
-      method: 'POST',
-      headers: { Authorization: token, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        settings: { cursor, filter: { withPhoto: 1, objectIDs: [CLOCKS_SUBJECT_ID] } },
-      }),
-    });
-
-    if (!resp.ok) {
-      throw new Error(`WB Content API error ${resp.status}: ${await resp.text()}`);
-    }
-
-    const data = await resp.json();
-    const cards = data.cards || [];
-
-    for (const card of cards) {
-      const photo = card.photos && card.photos[0] && card.photos[0].big;
-      if (photo) result.set(card.nmID, photo);
-    }
-
-    if (cards.length < cursor.limit) break;
-    const last = cards[cards.length - 1];
-    cursor = { limit: pageSize, updatedAt: last.updatedAt, nmID: last.nmID };
-  }
-
-  return result;
-}
-```
-
-- [ ] **Step 5: Run test to verify it passes**
-
-Run: `node --test test/wbPhotos.test.js`
-Expected: PASS (3 tests)
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add src/wbPhotos.js test/wbPhotos.test.js
-git commit -m "Add WB Content API photo fetcher"
-```
+**Дальше — с задачи 5.**
 
 ---
 
@@ -561,7 +74,7 @@ git commit -m "Add WB Content API photo fetcher"
 - Test: `test/render.test.js`
 
 **Interfaces:**
-- Consumes: product objects `{ nmId: number, name: string, description: string, photo: string }` (stub from Task 2 + `photo` attached in `build.js`); constants/builders from `src/links.js` (Task 3).
+- Consumes: product objects `{ nmId: number, name: string, description: string, photo: string }` (как их отдаёт `fetchAllClockProducts`, задача 4); constants/builders from `src/links.js` (Task 3).
 - Produces: `renderIndexPage(products: Product[]): string`; `renderProductPage(product: Product): string`; `escapeHtml(str: string): string`. Consumed by `build.js` (Task 8).
 
 - [ ] **Step 1: Write the failing test**
@@ -898,12 +411,12 @@ git commit -m "Add sitemap.xml and robots.txt generation"
 - Test: `test/build.test.js`
 
 **Interfaces:**
-- Consumes: `fetchSheetRows` (Task 1), `isReadyProduct`/`toProductStub` (Task 2), `fetchAllClockPhotos` (Task 4), `renderIndexPage`/`renderProductPage` (Task 5), `renderSitemap`/`renderRobotsTxt` (Task 7).
-- Produces: `buildSite({ sheetsUrl, sheetsSecret, wbToken, baseUrl, outDir, fetchFn? }): Promise<number>` — writes the full site to `outDir`, returns the number of products included. Also runnable as a CLI (`node src/build.js`) reading config from environment variables, used by the GitHub Actions workflow (Task 9).
+- Consumes: `fetchAllClockProducts` (Task 4), `renderIndexPage`/`renderProductPage` (Task 5), `renderSitemap`/`renderRobotsTxt` (Task 7).
+- Produces: `buildSite({ wbToken, baseUrl, outDir, fetchFn? }): Promise<number>` — writes the full site to `outDir`, returns the number of products included. Also runnable as a CLI (`node src/build.js`) reading config from environment variables, used by the GitHub Actions workflow (Task 9).
 
 - [ ] **Step 1: Write the failing end-to-end test**
 
-Uses one injected `fetchFn` covering both the Sheets call and the WB API calls (routed by URL), and writes to a real temp directory.
+Uses one injected `fetchFn` for the WB API, and writes to a real temp directory.
 
 ```js
 // test/build.test.js
@@ -917,31 +430,21 @@ import { buildSite } from '../src/build.js';
 test('buildSite writes index, one page per ready+photographed product, sitemap and robots.txt', async () => {
   const outDir = await mkdtemp(path.join(tmpdir(), 'catalog-build-'));
 
-  const fetchFn = async (url, opts) => {
-    if (url.includes('script.google.com')) {
-      return new Response(null, { status: 302, headers: { location: 'https://example.com/sheet-data' } });
-    }
-    if (url === 'https://example.com/sheet-data') {
-      return new Response(JSON.stringify({
-        ok: true,
-        rows: [
-          { 'Артикул WB': 1, 'Наименование': 'Часы А', 'Описание': 'Описание А' }, // has photo
-          { 'Артикул WB': 2, 'Наименование': 'Часы Б', 'Описание': 'Описание Б' }, // no photo -> excluded
-          { 'Артикул WB': '#N/A', 'Наименование': 'Черновик' }, // not ready -> excluded
-        ],
-      }), { status: 200 });
-    }
+  const fetchFn = async (url) => {
     if (url.includes('content-api.wildberries.ru')) {
       return new Response(JSON.stringify({
-        cards: [{ nmID: 1, updatedAt: '2026-08-01T00:00:00Z', photos: [{ big: 'https://basket.wbbasket.ru/1/big/1.jpg' }] }],
+        cards: [
+          { nmID: 1, title: 'Часы А', description: 'Описание А', updatedAt: '2026-08-01T00:00:00Z',
+            photos: [{ big: 'https://basket-46.wbbasket.ru/1/images/big/1.webp' }] },
+          { nmID: 2, title: 'Часы Б', description: 'Описание Б', updatedAt: '2026-08-02T00:00:00Z',
+            photos: [] }, // no photo -> excluded
+        ],
       }), { status: 200 });
     }
     throw new Error(`unexpected fetch: ${url}`);
   };
 
   const count = await buildSite({
-    sheetsUrl: 'https://script.google.com/x/exec',
-    sheetsSecret: 's',
     wbToken: 't',
     baseUrl: 'https://example.github.io/catalog',
     outDir,
@@ -953,7 +456,6 @@ test('buildSite writes index, one page per ready+photographed product, sitemap a
   const index = await readFile(path.join(outDir, 'index.html'), 'utf8');
   assert.match(index, /Часы А/);
   assert.doesNotMatch(index, /Часы Б/);
-  assert.doesNotMatch(index, /Черновик/);
 
   const productPage = await readFile(path.join(outDir, 'tovar', '1', 'index.html'), 'utf8');
   assert.match(productPage, /Часы А/);
@@ -986,20 +488,12 @@ Expected: FAIL — module not found.
 import { mkdir, writeFile, copyFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { fetchSheetRows } from './sheets.js';
-import { isReadyProduct, toProductStub } from './filter.js';
-import { fetchAllClockPhotos } from './wbPhotos.js';
+import { fetchAllClockProducts } from './wbCatalog.js';
 import { renderIndexPage, renderProductPage } from './render.js';
 import { renderSitemap, renderRobotsTxt } from './sitemap.js';
 
-export async function buildSite({ sheetsUrl, sheetsSecret, wbToken, baseUrl, outDir, fetchFn = fetch }) {
-  const rows = await fetchSheetRows({ webAppUrl: sheetsUrl, secret: sheetsSecret, fetchFn });
-  const stubs = rows.filter(isReadyProduct).map(toProductStub);
-
-  const photos = await fetchAllClockPhotos(wbToken, { fetchFn });
-  const products = stubs
-    .filter(p => photos.has(p.nmId))
-    .map(p => ({ ...p, photo: photos.get(p.nmId) }));
+export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
+  const products = await fetchAllClockProducts(wbToken, { fetchFn });
 
   await mkdir(outDir, { recursive: true });
   await writeFile(path.join(outDir, 'index.html'), renderIndexPage(products));
@@ -1022,8 +516,6 @@ export async function buildSite({ sheetsUrl, sheetsSecret, wbToken, baseUrl, out
 
 async function main() {
   const count = await buildSite({
-    sheetsUrl: process.env.SHEETS_WEBAPP_URL,
-    sheetsSecret: process.env.SHEETS_SECRET,
     wbToken: process.env.WB_API_TOKEN,
     baseUrl: process.env.SITE_BASE_URL,
     outDir: 'dist',
@@ -1065,7 +557,7 @@ git commit -m "Add build orchestrator producing the full static site"
 
 **Interfaces:**
 - Consumes: `npm test` (via `node --test`) and `node src/build.js` (Task 8) — the workflow's only job is to run these with the right environment/secrets and publish `dist/`.
-- Requires repository secrets `SHEETS_WEBAPP_URL`, `SHEETS_SECRET`, `WB_API_TOKEN` and a repository variable `SITE_BASE_URL` — set up in Task 10, not committed anywhere.
+- Requires repository secret `WB_API_TOKEN` and a repository variable `SITE_BASE_URL` — set up in Task 10, not committed anywhere.
 
 - [ ] **Step 1: Create `.github/workflows/build-deploy.yml`**
 
@@ -1101,8 +593,6 @@ jobs:
       - name: Build site
         run: node src/build.js
         env:
-          SHEETS_WEBAPP_URL: ${{ secrets.SHEETS_WEBAPP_URL }}
-          SHEETS_SECRET: ${{ secrets.SHEETS_SECRET }}
           WB_API_TOKEN: ${{ secrets.WB_API_TOKEN }}
           SITE_BASE_URL: ${{ vars.SITE_BASE_URL }}
       - uses: actions/upload-pages-artifact@v3
@@ -1153,9 +643,7 @@ git push -u origin master
 - [ ] **Step 4: Add repository secrets and variable**
 
 In the GitHub repo: Settings → Secrets and variables → Actions.
-- Secret `SHEETS_WEBAPP_URL` = the Google Sheets Web App exec URL.
-- Secret `SHEETS_SECRET` = the Web App's secret.
-- Secret `WB_API_TOKEN` = the user's WB Content API token.
+- Secret `WB_API_TOKEN` = the user's WB Content API token (the only secret).
 - Variable (not secret) `SITE_BASE_URL` = `https://<username>.github.io/wall-clocks-catalog` (no trailing slash).
 
 - [ ] **Step 5: Enable GitHub Pages**

@@ -1,8 +1,13 @@
 const WB_API_BASE = 'https://content-api.wildberries.ru';
 const CLOCKS_SUBJECT_ID = 625; // «Часы настенные»
 
-export async function fetchAllClockPhotos(token, { fetchFn = fetch, pageSize = 100 } = {}) {
-  const result = new Map();
+/**
+ * Весь каталог настенных часов прямо из WB: название, описание и фото —
+ * всё приходит одним ответом, гугл-таблица для сайта не нужна.
+ * Возвращает [{ nmId, name, description, photo }] — только карточки с фото.
+ */
+export async function fetchAllClockProducts(token, { fetchFn = fetch, pageSize = 100 } = {}) {
+  const byNmId = new Map(); // ключ = nmID: страницы WB могут перекрываться, дубли на сайте не нужны
   let cursor = { limit: pageSize };
 
   while (true) {
@@ -23,7 +28,13 @@ export async function fetchAllClockPhotos(token, { fetchFn = fetch, pageSize = 1
 
     for (const card of cards) {
       const photo = card.photos?.[0]?.big;
-      if (photo) result.set(card.nmID, photo);
+      if (!photo) continue;
+      byNmId.set(card.nmID, {
+        nmId: card.nmID,
+        name: (card.title || '').trim(),
+        description: (card.description || '').trim(),
+        photo,
+      });
     }
 
     if (cards.length < cursor.limit) break;
@@ -31,5 +42,5 @@ export async function fetchAllClockPhotos(token, { fetchFn = fetch, pageSize = 1
     cursor = { limit: pageSize, updatedAt: last.updatedAt, nmID: last.nmID };
   }
 
-  return result;
+  return [...byNmId.values()];
 }
