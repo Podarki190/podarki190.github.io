@@ -73,7 +73,7 @@ test('fetchAllClockProducts keeps one entry per nmID when pages overlap', async 
   };
 
   const products = await fetchAllClockProducts('t', { fetchFn, pageSize: 2 });
-  assert.deepEqual(products.map(p => p.nmId), [1, 2, 3]);
+  assert.deepEqual(products.map(p => p.nmId), [3, 2, 1]); // порядок — по дате, каждый ровно раз
 });
 
 test('fetchAllClockProducts skips cards with no photos', async () => {
