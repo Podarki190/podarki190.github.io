@@ -34,6 +34,7 @@ export async function fetchAllClockProducts(token, { fetchFn = fetch, pageSize =
         name: (card.title || '').trim(),
         description: (card.description || '').trim(),
         photo,
+        createdAt: card.createdAt || '',
       });
     }
 
@@ -42,5 +43,6 @@ export async function fetchAllClockProducts(token, { fetchFn = fetch, pageSize =
     cursor = { limit: pageSize, updatedAt: last.updatedAt, nmID: last.nmID };
   }
 
-  return [...byNmId.values()];
+  // Новые сверху, старые партии (винил, .jiv) уезжают в конец каталога.
+  return [...byNmId.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }

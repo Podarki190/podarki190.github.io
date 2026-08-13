@@ -4,6 +4,7 @@ import { fetchAllClockProducts } from '../src/wbCatalog.js';
 
 const card = (nmID, extra = {}) => ({
   nmID,
+  createdAt: `2026-08-0${nmID}T00:00:00Z`,
   updatedAt: `2026-08-0${nmID}T00:00:00Z`,
   title: `Часы ${nmID}`,
   description: `Описание ${nmID}`,
@@ -19,7 +20,20 @@ test('fetchAllClockProducts returns name, description and photo for every card',
     name: 'Часы 1',
     description: 'Описание 1',
     photo: 'https://basket-46.wbbasket.ru/1/images/big/1.webp',
+    createdAt: '2026-08-01T00:00:00Z',
   }]);
+});
+
+test('fetchAllClockProducts puts the newest products first', async () => {
+  const fetchFn = async () => new Response(JSON.stringify({
+    cards: [
+      card(1, { createdAt: '2024-09-28T00:00:00Z' }), // старая партия (винил)
+      card(2, { createdAt: '2026-07-01T00:00:00Z' }), // новые цветные
+      card(3, { createdAt: '2025-02-24T00:00:00Z' }), // .jiv
+    ],
+  }), { status: 200 });
+  const products = await fetchAllClockProducts('t', { fetchFn });
+  assert.deepEqual(products.map(p => p.nmId), [2, 3, 1]);
 });
 
 test('fetchAllClockProducts asks WB only for wall clocks that have photos', async () => {
