@@ -25,6 +25,12 @@ test('renderIndexPage embeds every product as real HTML text (no JS-only renderi
   assert.match(html, /search\.js/);
 });
 
+// 5359 плиток × четыре ссылки = мегабайты, а заказывают всё равно со страницы товара.
+test('index tiles carry no order buttons, the product page does', () => {
+  assert.doesNotMatch(renderIndexPage([product]), /wa\.me|tel:|t\.me/);
+  assert.match(renderProductPage(product), /wa\.me/);
+});
+
 test('renderIndexPage keeps the order it was given (newest first comes from the fetcher)', () => {
   const older = { ...product, nmId: 1, name: 'Старые часы' };
   const html = renderIndexPage([product, older]);

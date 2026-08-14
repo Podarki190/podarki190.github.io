@@ -30,6 +30,9 @@ function renderOrderButtons(product) {
     </div>`;
 }
 
+// Кнопок заказа на плитке нет намеренно: они есть на странице товара, а на
+// витрине их 5359 копий (одни ссылки WhatsApp с закодированным русским текстом
+// весили 2,2 МБ). Плитка ведёт на страницу товара, там и заказывают.
 function renderCard(product) {
   const safeName = escapeHtml(product.name);
   const href = `tovar/${product.nmId}/`;
@@ -38,7 +41,6 @@ function renderCard(product) {
     <h3><a href="${href}">${safeName}</a></h3>
     <p>${escapeHtml(truncate(product.description, 150))}</p>
     ${renderPriceBlock()}
-    ${renderOrderButtons(product)}
   </article>`;
 }
 
