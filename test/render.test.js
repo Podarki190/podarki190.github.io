@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderIndexPage, renderProductPage, escapeHtml } from '../src/render.js';
+import { renderIndexPage, renderProductPage, renderStaticPage, escapeHtml } from '../src/render.js';
+import { PAGES } from '../src/pages.js';
 
 const product = {
   nmId: 1259100136,
@@ -32,28 +33,6 @@ test('renderProductPage falls back to the single photo when photos is missing', 
   assert.doesNotMatch(page, /фото — листайте/);
 });
 
-test('product page links to its neighbours in the catalog', () => {
-  const prev = { ...product, nmId: 111, name: 'Предыдущие часы' };
-  const next = { ...product, nmId: 222, name: 'Следующие часы' };
-  const page = renderProductPage(product, '', { prev, next });
-  assert.match(page, /href="\.\.\/111\/"/);
-  assert.match(page, /href="\.\.\/222\/"/);
-  assert.match(page, /title="Следующие часы"/);
-});
-
-test('the first and last product get disabled arrows, not broken links', () => {
-  const page = renderProductPage(product, '', { next: { ...product, nmId: 222 } });
-  assert.match(page, /class="pnav prev pnav-off"[^>]*>/);
-  assert.doesNotMatch(page, /class="pnav prev pnav-off" id="pnav-prev" rel="prev" href/);
-  assert.match(page, /href="\.\.\/222\/"/);
-});
-
-test('arrows are labelled, not bare chevrons', () => {
-  const page = renderProductPage(product, '', { prev: { ...product, nmId: 111 } });
-  assert.match(page, /Предыдущие/);
-  assert.match(page, /Следующие/);
-});
-
 test('similar products are shown as real tiles linking up one level', () => {
   const similar = [
     { ...product, nmId: 111, name: 'Соседние часы' },
@@ -68,6 +47,34 @@ test('similar products are shown as real tiles linking up one level', () => {
 
 test('no similar block when there are no neighbours', () => {
   assert.doesNotMatch(renderProductPage(product), /Похожие товары/);
+});
+
+test('every page carries the header and footer navigation', () => {
+  for (const [page, prefix] of [
+    [renderIndexPage([product]), ''],
+    [renderProductPage(product), '../../'],
+    [renderStaticPage(PAGES[0]), '../'],
+  ]) {
+    assert.match(page, /<header class="site-header">/);
+    assert.match(page, /<footer class="site-footer">/);
+    for (const { slug, nav } of PAGES) {
+      assert.ok(page.includes(`href="${prefix}${slug}/"`), `нет ссылки на ${slug} при префиксе "${prefix}"`);
+      assert.ok(page.includes(nav));
+    }
+  }
+});
+
+test('the current section is marked in the navigation', () => {
+  const page = renderStaticPage(PAGES[1]);
+  assert.match(page, new RegExp(`href="\\.\\./${PAGES[1].slug}/" aria-current="page"`));
+});
+
+test('static pages keep their own title and description', () => {
+  for (const page of PAGES) {
+    const html = renderStaticPage(page);
+    assert.ok(html.includes(`<title>${page.title}</title>`));
+    assert.ok(html.includes(page.description));
+  }
 });
 
 test('order buttons are colour-coded by channel', () => {
@@ -92,8 +99,9 @@ test('renderIndexPage embeds every product as real HTML text (no JS-only renderi
 
 // 5359 плиток × четыре ссылки = мегабайты, а заказывают всё равно со страницы товара.
 test('index tiles carry no order buttons, the product page does', () => {
-  assert.doesNotMatch(renderIndexPage([product]), /wa\.me|tel:|t\.me/);
-  assert.match(renderProductPage(product), /wa\.me/);
+  const grid = renderIndexPage([product]).match(/<div class="grid">[\s\S]*?<\/div>\s*<\/main>/)[0];
+  assert.doesNotMatch(grid, /wa\.me|tel:|t\.me|order-buttons/);
+  assert.match(renderProductPage(product), /order-buttons[\s\S]*wa\.me/);
 });
 
 test('renderIndexPage keeps the order it was given (newest first comes from the fetcher)', () => {

@@ -3,8 +3,9 @@ import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { fetchAllClockProducts } from './wbCatalog.js';
-import { renderIndexPage, renderProductPage } from './render.js';
+import { renderIndexPage, renderProductPage, renderStaticPage } from './render.js';
 import { renderSitemap, renderRobotsTxt } from './sitemap.js';
+import { PAGES } from './pages.js';
 
 // Короткий отпечаток стилей и скриптов — попадает в адрес файла (?v=…), чтобы
 // после правки вёрстки браузер скачал новую версию, а не показывал старую из кэша.
@@ -25,22 +26,21 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
 
   const assetSources = [
     new URL('./links.js', import.meta.url),
-    ...['style.css', 'search.js', 'order-form.js', 'product-nav.js']
+    ...['style.css', 'search.js', 'order-form.js', 'product-nav.js', 'favicon.png']
       .map(a => new URL(`../static/${a}`, import.meta.url)),
   ];
   const version = await assetVersion(assetSources);
 
   await mkdir(outDir, { recursive: true });
   await writeFile(path.join(outDir, 'index.html'), renderIndexPage(products, version));
-  await writeFile(path.join(outDir, 'sitemap.xml'), renderSitemap(products, baseUrl));
+  await writeFile(path.join(outDir, 'sitemap.xml'), renderSitemap(products, baseUrl, PAGES.map(p => p.slug)));
   await writeFile(path.join(outDir, 'robots.txt'), renderRobotsTxt(baseUrl));
 
-  // Список для стрелок «вперёд-назад» по результатам поиска. Только id и
-  // название в нижнем регистре — качается лишь при заходе из поиска.
-  await writeFile(
-    path.join(outDir, 'catalog.json'),
-    JSON.stringify(products.map(p => [p.nmId, p.name.toLowerCase()])),
-  );
+  for (const page of PAGES) {
+    const pageDir = path.join(outDir, page.slug);
+    await mkdir(pageDir, { recursive: true });
+    await writeFile(path.join(pageDir, 'index.html'), renderStaticPage(page, version));
+  }
 
   for (const [i, product] of products.entries()) {
     const productDir = path.join(outDir, 'tovar', String(product.nmId));

@@ -4,6 +4,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { buildSite } from '../src/build.js';
+import { PAGES } from '../src/pages.js';
 
 test('buildSite writes index, one page per product with a photo, sitemap and robots.txt', async () => {
   const outDir = await mkdtemp(path.join(tmpdir(), 'catalog-build-'));
@@ -51,9 +52,12 @@ test('buildSite writes index, one page per product with a photo, sitemap and rob
 
   assert.match(await readFile(path.join(outDir, 'robots.txt'), 'utf8'), /Sitemap:/);
 
-  // список для стрелок по результатам поиска: только опубликованные товары
-  const catalog = JSON.parse(await readFile(path.join(outDir, 'catalog.json'), 'utf8'));
-  assert.deepEqual(catalog, [[3, 'часы в'], [1, 'часы а']]);
+  // текстовые страницы и их адреса в карте сайта
+  for (const page of PAGES) {
+    const html = await readFile(path.join(outDir, page.slug, 'index.html'), 'utf8');
+    assert.match(html, new RegExp(page.title.split(' ')[0]));
+    assert.ok(sitemap.includes(`/${page.slug}/`), `${page.slug} нет в sitemap`);
+  }
 
   // отпечаток стилей должен быть один и тот же на всех страницах
   const stamp = index.match(/style\.css\?v=([a-f0-9]{8})/);

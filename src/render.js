@@ -1,8 +1,46 @@
 import {
-  ORIGINAL_PRICE, SALE_PRICE, SHIPPING_TEXT,
+  PHONE, TELEGRAM, ORIGINAL_PRICE, SALE_PRICE, SHIPPING_TEXT,
   buildTelLink, buildWhatsAppLink, buildTelegramLink, buildWbLink,
   buildCardWhatsAppMessage, truncate,
 } from './links.js';
+import { PAGES } from './pages.js';
+
+const SITE_NAME = 'Уникальные настенные часы';
+const SITE_TAGLINE = 'ручная работа мастеров из города Клин';
+
+function renderNav(prefix, current) {
+  const item = (href, label, active) =>
+    `<a href="${href}"${active ? ' aria-current="page"' : ''}>${label}</a>`;
+  return [
+    item(`${prefix}`, 'Каталог', current === 'index'),
+    ...PAGES.map(p => item(`${prefix}${p.slug}/`, p.nav, current === p.slug)),
+  ].join('\n      ');
+}
+
+function renderHeader(prefix, current) {
+  return `<header class="site-header">
+  <a class="brand" href="${prefix}">
+    <span class="brand-name">${SITE_NAME}</span>
+    <span class="brand-tagline">${SITE_TAGLINE}</span>
+  </a>
+  <nav class="site-nav">
+      ${renderNav(prefix, current)}
+  </nav>
+</header>`;
+}
+
+function renderFooter(prefix, current) {
+  return `<footer class="site-footer">
+  <nav class="site-nav">
+      ${renderNav(prefix, current)}
+  </nav>
+  <p class="footer-contacts">
+    <a href="${buildTelLink()}">${PHONE}</a> ·
+    <a href="${buildTelegramLink()}" target="_blank" rel="noopener">Telegram @${TELEGRAM}</a>
+  </p>
+  <p class="footer-note">${SITE_NAME} — ${SITE_TAGLINE}. ${SHIPPING_TEXT}.</p>
+</footer>`;
+}
 
 export function escapeHtml(str) {
   return String(str)
@@ -48,7 +86,7 @@ function renderCard(product, hrefPrefix = 'tovar/') {
 // Абсолютные пути нельзя: сайт живёт в подпапке GitHub Pages.
 // version — отпечаток содержимого стилей и скриптов. Без него браузер месяцами
 // держит старый style.css из кэша, и правки вёрстки не доезжают до людей.
-function pageShell({ title, description, body, prefix = '', scripts = [], version = '' }) {
+function pageShell({ title, description, body, prefix = '', scripts = [], version = '', current = '' }) {
   const v = version ? `?v=${version}` : '';
   return `<!doctype html>
 <html lang="ru">
@@ -57,11 +95,15 @@ function pageShell({ title, description, body, prefix = '', scripts = [], versio
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(description)}">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🕰️</text></svg>">
+<link rel="icon" href="${prefix}favicon.png${v}">
 <link rel="stylesheet" href="${prefix}style.css${v}">
 </head>
 <body>
+${renderHeader(prefix, current)}
+<main>
 ${body}
+</main>
+${renderFooter(prefix, current)}
 ${scripts.map(s => `<script type="module" src="${prefix}${s}${v}"></script>`).join('\n')}
 </body>
 </html>
@@ -81,6 +123,21 @@ ${products.map(p => renderCard(p)).join('\n')}
     body,
     scripts: ['search.js'],
     version,
+    current: 'index',
+  });
+}
+
+export function renderStaticPage(page, version = '') {
+  return pageShell({
+    title: page.title,
+    description: page.description,
+    body: `<article class="page">
+  <h1>${escapeHtml(page.title)}</h1>
+${page.body}
+</article>`,
+    prefix: '../',
+    version,
+    current: page.slug,
   });
 }
 
@@ -101,19 +158,6 @@ function renderGallery(product) {
 // Соседи известны уже на сборке: каталог отсортирован, сосед — просто следующий
 // элемент массива. Если человек пришёл из поиска, product-nav.js переставит
 // ссылки на соседей по его подборке.
-function renderProductNav({ prev, next }) {
-  // Всегда <a>: если соседа нет, ссылка просто без href и погашена. Так
-  // product-nav.js может оживить её, когда посетитель пришёл из поиска.
-  const arrow = (product, cls, sign, label) => `
-  <a class="pnav ${cls}${product ? '' : ' pnav-off'}" id="pnav-${cls}" rel="${cls}"${
-    product ? ` href="../${product.nmId}/" title="${escapeHtml(product.name)}"` : ''}>
-    <span class="pnav-sign">${sign}</span>
-    <span class="pnav-label">${label}</span>
-  </a>`;
-  return `${arrow(prev, 'prev', '‹', 'Предыдущие')}${arrow(next, 'next', '›', 'Следующие')}
-  <p id="pnav-context"></p>`;
-}
-
 // Ряд похожих товаров внизу карточки — так делают все живые магазины: человек
 // видит, куда идёт, а не жмёт стрелку вслепую. Соседи по каталогу почти всегда
 // из той же партии, то есть одной темы.
@@ -130,7 +174,6 @@ ${similar.map(p => renderCard(p, '../')).join('\n')}
 export function renderProductPage(product, version = '', neighbours = {}) {
   const safeName = escapeHtml(product.name);
   const body = `<a href="../../" id="back-link">← Ко всем часам</a>
-${renderProductNav(neighbours)}
 <article class="product">
   ${renderGallery(product)}
   <div class="product-info">
