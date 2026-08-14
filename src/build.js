@@ -47,7 +47,11 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
     await mkdir(productDir, { recursive: true });
     await writeFile(
       path.join(productDir, 'index.html'),
-      renderProductPage(product, version, { prev: products[i - 1], next: products[i + 1] }),
+      renderProductPage(product, version, {
+        prev: products[i - 1],
+        next: products[i + 1],
+        similar: [...products.slice(Math.max(0, i - 3), i), ...products.slice(i + 1, i + 4)],
+      }),
     );
   }
 

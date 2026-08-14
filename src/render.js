@@ -33,9 +33,9 @@ function renderOrderButtons(product) {
 // Кнопок заказа на плитке нет намеренно: они есть на странице товара, а на
 // витрине их 5359 копий (одни ссылки WhatsApp с закодированным русским текстом
 // весили 2,2 МБ). Плитка ведёт на страницу товара, там и заказывают.
-function renderCard(product) {
+function renderCard(product, hrefPrefix = 'tovar/') {
   const safeName = escapeHtml(product.name);
-  const href = `tovar/${product.nmId}/`;
+  const href = `${hrefPrefix}${product.nmId}/`;
   return `<article class="card" data-name="${escapeHtml(product.name.toLowerCase())}">
     <a href="${href}"><img src="${escapeHtml(product.photo)}" loading="lazy" alt="${safeName}"></a>
     <h3><a href="${href}">${safeName}</a></h3>
@@ -73,10 +73,10 @@ export function renderIndexPage(products, version = '') {
 <input id="search" type="search" placeholder="Поиск по названию...">
 <p id="search-count"></p>
 <div class="grid">
-${products.map(renderCard).join('\n')}
+${products.map(p => renderCard(p)).join('\n')}
 </div>`;
   return pageShell({
-    title: 'Уникальные настенные часы — ручная работа мастеров из города Клин — Каталог',
+    title: 'Уникальные настенные часы — ручная работа мастеров из города Клин',
     description: `${products.length} моделей настенных часов ручной работы из Клина. Цена ${SALE_PRICE} ₽, доставка по всей России бесплатная.`,
     body,
     scripts: ['search.js'],
@@ -102,11 +102,29 @@ function renderGallery(product) {
 // элемент массива. Если человек пришёл из поиска, product-nav.js переставит
 // ссылки на соседей по его подборке.
 function renderProductNav({ prev, next }) {
-  const arrow = (product, cls, sign, label) => product
-    ? `<a class="pnav ${cls}" id="pnav-${cls}" href="../${product.nmId}/" title="${escapeHtml(product.name)}" rel="${label}">${sign}</a>`
-    : `<span class="pnav ${cls} pnav-off" id="pnav-${cls}">${sign}</span>`;
-  return `${arrow(prev, 'prev', '‹', 'prev')}${arrow(next, 'next', '›', 'next')}
+  // Всегда <a>: если соседа нет, ссылка просто без href и погашена. Так
+  // product-nav.js может оживить её, когда посетитель пришёл из поиска.
+  const arrow = (product, cls, sign, label) => `
+  <a class="pnav ${cls}${product ? '' : ' pnav-off'}" id="pnav-${cls}" rel="${cls}"${
+    product ? ` href="../${product.nmId}/" title="${escapeHtml(product.name)}"` : ''}>
+    <span class="pnav-sign">${sign}</span>
+    <span class="pnav-label">${label}</span>
+  </a>`;
+  return `${arrow(prev, 'prev', '‹', 'Предыдущие')}${arrow(next, 'next', '›', 'Следующие')}
   <p id="pnav-context"></p>`;
+}
+
+// Ряд похожих товаров внизу карточки — так делают все живые магазины: человек
+// видит, куда идёт, а не жмёт стрелку вслепую. Соседи по каталогу почти всегда
+// из той же партии, то есть одной темы.
+function renderSimilar(similar) {
+  if (!similar?.length) return '';
+  return `<section class="similar">
+  <h2>Похожие товары</h2>
+  <div class="grid">
+${similar.map(p => renderCard(p, '../')).join('\n')}
+  </div>
+</section>`;
 }
 
 export function renderProductPage(product, version = '', neighbours = {}) {
@@ -129,7 +147,8 @@ ${renderProductNav(neighbours)}
     </form>
     <p class="description">${escapeHtml(product.description)}</p>
   </div>
-</article>`;
+</article>
+${renderSimilar(neighbours.similar)}`;
   return pageShell({
     title: product.name,
     description: truncate(product.description, 150),

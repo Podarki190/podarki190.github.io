@@ -29,15 +29,14 @@ if (query) {
 }
 
 function setArrow(kind, match, query) {
-  const current = document.getElementById(`pnav-${kind}`);
-  const sign = current.textContent;
-  const replacement = document.createElement(match ? 'a' : 'span');
-  replacement.id = current.id;
-  replacement.className = `pnav ${kind}${match ? '' : ' pnav-off'}`;
-  replacement.textContent = sign;
+  const arrow = document.getElementById(`pnav-${kind}`);
   if (match) {
-    replacement.href = `../${match[0]}/#${encodeURIComponent(query)}`;
-    replacement.title = match[1];
+    arrow.href = `../${match[0]}/#${encodeURIComponent(query)}`;
+    arrow.title = match[1];
+    arrow.classList.remove('pnav-off');
+  } else {
+    arrow.removeAttribute('href');
+    arrow.removeAttribute('title');
+    arrow.classList.add('pnav-off');
   }
-  current.replaceWith(replacement);
 }

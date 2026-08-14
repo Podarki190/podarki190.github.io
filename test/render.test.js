@@ -43,8 +43,31 @@ test('product page links to its neighbours in the catalog', () => {
 
 test('the first and last product get disabled arrows, not broken links', () => {
   const page = renderProductPage(product, '', { next: { ...product, nmId: 222 } });
-  assert.match(page, /<span class="pnav prev pnav-off"/);
+  assert.match(page, /class="pnav prev pnav-off"[^>]*>/);
+  assert.doesNotMatch(page, /class="pnav prev pnav-off" id="pnav-prev" rel="prev" href/);
   assert.match(page, /href="\.\.\/222\/"/);
+});
+
+test('arrows are labelled, not bare chevrons', () => {
+  const page = renderProductPage(product, '', { prev: { ...product, nmId: 111 } });
+  assert.match(page, /Предыдущие/);
+  assert.match(page, /Следующие/);
+});
+
+test('similar products are shown as real tiles linking up one level', () => {
+  const similar = [
+    { ...product, nmId: 111, name: 'Соседние часы' },
+    { ...product, nmId: 222, name: 'Другие соседние часы' },
+  ];
+  const page = renderProductPage(product, '', { similar });
+  assert.match(page, /<h2>Похожие товары<\/h2>/);
+  assert.match(page, /href="\.\.\/111\/"/);
+  assert.match(page, /Соседние часы/);
+  assert.doesNotMatch(page, /href="tovar\/111\/"/); // не корневой путь: мы уже внутри /tovar/
+});
+
+test('no similar block when there are no neighbours', () => {
+  assert.doesNotMatch(renderProductPage(product), /Похожие товары/);
 });
 
 test('order buttons are colour-coded by channel', () => {

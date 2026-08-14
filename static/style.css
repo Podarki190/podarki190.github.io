@@ -54,28 +54,41 @@ h1 { font-size: 1.6rem; }
 .gallery-hint { font-size: 0.85rem; color: #777; margin: 0.4rem 0 0; }
 .description { line-height: 1.55; }
 
-/* ── стрелки к соседним товарам ────────────────────────────── */
+/* ── переход к соседним товарам ────────────────────────────── */
+/* Пунктир и тёплый коричневый — те же, что в инфографике на фото товара. */
 .pnav {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 3rem; height: 3rem; border-radius: 50%; background: #fff;
-  border: 1px solid #ccc; color: #333; font-size: 1.8rem; line-height: 1;
-  text-decoration: none; user-select: none;
+  display: inline-flex; flex-direction: column; align-items: center; gap: 0.35rem;
+  text-decoration: none; color: #6b5335; user-select: none; vertical-align: top;
 }
-.pnav:hover { background: #f2f2f2; }
-.pnav-off { opacity: 0.3; }
+.pnav-sign {
+  display: flex; align-items: center; justify-content: center;
+  width: 3.25rem; height: 3.25rem; border-radius: 50%;
+  border: 2px dashed #9c7b52; background: #fff; font-size: 1.9rem; line-height: 1;
+}
+.pnav-label {
+  font-size: 0.78rem; padding: 0.12rem 0.45rem; background: #fff;
+  border: 1px dashed #9c7b52; border-radius: 6px; white-space: nowrap;
+}
+.pnav:hover .pnav-sign { background: #f6efe6; }
+.pnav-off { opacity: 0.32; pointer-events: none; }
 #pnav-context { font-size: 0.9rem; color: #666; margin: 0.6rem 0 0; }
-@media (max-width: 899px) {
-  .pnav { margin: 0.8rem 0.4rem 0 0; }
-}
-/* На большом экране — по краям окна, как листалка */
+
+@media (max-width: 899px) { .pnav { margin: 0.8rem 0.6rem 0 0; } }
+
+/* На большом экране — по краям колонки с товаром, вровень с галереей */
 @media (min-width: 900px) {
-  .pnav {
-    position: fixed; top: 50%; transform: translateY(-50%); z-index: 5;
-    width: 3.5rem; height: 3.5rem; box-shadow: 0 2px 10px rgba(0,0,0,.12);
-  }
-  .pnav.prev { left: max(1rem, calc(50vw - 640px)); }
-  .pnav.next { right: max(1rem, calc(50vw - 640px)); }
+  .pnav { position: fixed; top: 46%; z-index: 5; }
+  .pnav.prev { left: max(0.75rem, calc(50vw - 620px)); }
+  .pnav.next { right: max(0.75rem, calc(50vw - 620px)); }
 }
+
+/* ── похожие товары ────────────────────────────────────────── */
+.similar { max-width: 1100px; margin: 3rem auto 0; }
+.similar h2 {
+  font-size: 1.25rem; margin: 0 0 1rem;
+  border-bottom: 2px dashed #9c7b52; padding-bottom: 0.5rem;
+}
+.similar .grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
 
 #order-form { display: flex; flex-direction: column; gap: 0.6rem; max-width: 420px; margin-top: 2rem; }
 
