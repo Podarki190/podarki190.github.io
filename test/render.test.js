@@ -89,6 +89,14 @@ test('renderProductPage links back to the catalog and to WB', () => {
 
 // Сайт живёт в подпапке (https://user.github.io/wall-clocks-catalog/), поэтому
 // абсолютный путь вида /style.css уехал бы в корень домена и отдал 404.
+// Без отпечатка в адресе браузер держит старый style.css и правки вёрстки не доезжают.
+test('asset urls carry the version stamp when one is given', () => {
+  assert.match(renderIndexPage([product], 'a1b2c3d4'), /href="style\.css\?v=a1b2c3d4"/);
+  assert.match(renderIndexPage([product], 'a1b2c3d4'), /src="search\.js\?v=a1b2c3d4"/);
+  assert.match(renderProductPage(product, 'a1b2c3d4'), /href="\.\.\/\.\.\/style\.css\?v=a1b2c3d4"/);
+  assert.doesNotMatch(renderIndexPage([product]), /\?v=/);
+});
+
 test('pages never use absolute paths for their own assets', () => {
   for (const html of [renderIndexPage([product]), renderProductPage(product)]) {
     assert.doesNotMatch(html, /(href|src)="\/[^/]/);

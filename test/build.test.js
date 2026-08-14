@@ -51,6 +51,11 @@ test('buildSite writes index, one page per product with a photo, sitemap and rob
 
   assert.match(await readFile(path.join(outDir, 'robots.txt'), 'utf8'), /Sitemap:/);
 
+  // отпечаток стилей должен быть один и тот же на всех страницах
+  const stamp = index.match(/style\.css\?v=([a-f0-9]{8})/);
+  assert.ok(stamp, 'на главной нет версии стилей');
+  assert.ok(productPage.includes(`style.css?v=${stamp[1]}`));
+
   // копии для браузера
   await readFile(path.join(outDir, 'links.js'), 'utf8');
   await readFile(path.join(outDir, 'style.css'), 'utf8');

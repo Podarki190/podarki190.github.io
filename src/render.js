@@ -46,7 +46,10 @@ function renderCard(product) {
 
 // prefix — путь до корня сайта: '' для главной, '../../' для страницы товара.
 // Абсолютные пути нельзя: сайт живёт в подпапке GitHub Pages.
-function pageShell({ title, description, body, prefix = '', scripts = [] }) {
+// version — отпечаток содержимого стилей и скриптов. Без него браузер месяцами
+// держит старый style.css из кэша, и правки вёрстки не доезжают до людей.
+function pageShell({ title, description, body, prefix = '', scripts = [], version = '' }) {
+  const v = version ? `?v=${version}` : '';
   return `<!doctype html>
 <html lang="ru">
 <head>
@@ -55,17 +58,17 @@ function pageShell({ title, description, body, prefix = '', scripts = [] }) {
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(description)}">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🕰️</text></svg>">
-<link rel="stylesheet" href="${prefix}style.css">
+<link rel="stylesheet" href="${prefix}style.css${v}">
 </head>
 <body>
 ${body}
-${scripts.map(s => `<script type="module" src="${prefix}${s}"></script>`).join('\n')}
+${scripts.map(s => `<script type="module" src="${prefix}${s}${v}"></script>`).join('\n')}
 </body>
 </html>
 `;
 }
 
-export function renderIndexPage(products) {
+export function renderIndexPage(products, version = '') {
   const body = `<h1>Настенные часы — каталог</h1>
 <input id="search" type="search" placeholder="Поиск по названию...">
 <p id="search-count"></p>
@@ -77,6 +80,7 @@ ${products.map(renderCard).join('\n')}
     description: `${products.length} моделей настенных часов. Цена ${SALE_PRICE} ₽, доставка по всей России бесплатная.`,
     body,
     scripts: ['search.js'],
+    version,
   });
 }
 
@@ -86,29 +90,33 @@ function renderGallery(product) {
   const photos = product.photos?.length ? product.photos : [product.photo];
   const safeName = escapeHtml(product.name);
   const slides = photos.map((src, i) => `
-    <img src="${escapeHtml(src)}" alt="${safeName} — фото ${i + 1}"${i ? ' loading="lazy"' : ''}>`).join('');
-  return `<div class="gallery">${slides}
-  </div>
-  ${photos.length > 1 ? `<p class="gallery-hint">${photos.length} фото — листайте вбок</p>` : ''}`;
+      <img src="${escapeHtml(src)}" alt="${safeName} — фото ${i + 1}"${i ? ' loading="lazy"' : ''}>`).join('');
+  return `<div class="gallery-wrap">
+    <div class="gallery">${slides}
+    </div>
+    ${photos.length > 1 ? `<p class="gallery-hint">${photos.length} фото — пролистайте галерею</p>` : ''}
+  </div>`;
 }
 
-export function renderProductPage(product) {
+export function renderProductPage(product, version = '') {
   const safeName = escapeHtml(product.name);
   const body = `<a href="../../">← Ко всем часам</a>
 <article class="product">
   ${renderGallery(product)}
-  <h1>${safeName}</h1>
-  <p>${escapeHtml(product.description)}</p>
-  ${renderPriceBlock()}
-  ${renderOrderButtons(product)}
-  <form id="order-form" data-name="${safeName}" data-nmid="${product.nmId}">
-    <h2>Оформить заказ</h2>
-    <label>ФИО <input id="fio" required></label>
-    <label>Телефон <input id="phone" type="tel" required></label>
-    <label>Город и адрес доставки <input id="address" required></label>
-    <button class="btn btn-wa" type="submit" data-target="whatsapp">Отправить в WhatsApp</button>
-    <button class="btn btn-tg" type="submit" data-target="telegram">Отправить в Telegram</button>
-  </form>
+  <div class="product-info">
+    <h1>${safeName}</h1>
+    ${renderPriceBlock()}
+    ${renderOrderButtons(product)}
+    <form id="order-form" data-name="${safeName}" data-nmid="${product.nmId}">
+      <h2>Оформить заказ</h2>
+      <label>ФИО <input id="fio" required></label>
+      <label>Телефон <input id="phone" type="tel" required></label>
+      <label>Город и адрес доставки <input id="address" required></label>
+      <button class="btn btn-wa" type="submit" data-target="whatsapp">Отправить в WhatsApp</button>
+      <button class="btn btn-tg" type="submit" data-target="telegram">Отправить в Telegram</button>
+    </form>
+    <p class="description">${escapeHtml(product.description)}</p>
+  </div>
 </article>`;
   return pageShell({
     title: product.name,
@@ -116,5 +124,6 @@ export function renderProductPage(product) {
     body,
     prefix: '../../',
     scripts: ['order-form.js'],
+    version,
   });
 }

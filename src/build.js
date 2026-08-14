@@ -1,9 +1,18 @@
-import { mkdir, writeFile, copyFile } from 'node:fs/promises';
+import { mkdir, writeFile, copyFile, readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { fetchAllClockProducts } from './wbCatalog.js';
 import { renderIndexPage, renderProductPage } from './render.js';
 import { renderSitemap, renderRobotsTxt } from './sitemap.js';
+
+// Короткий отпечаток стилей и скриптов — попадает в адрес файла (?v=…), чтобы
+// после правки вёрстки браузер скачал новую версию, а не показывал старую из кэша.
+async function assetVersion(sources) {
+  const hash = createHash('md5');
+  for (const source of sources) hash.update(await readFile(source));
+  return hash.digest('hex').slice(0, 8);
+}
 
 export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
   const products = await fetchAllClockProducts(wbToken, { fetchFn });
@@ -14,20 +23,25 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
     throw new Error('WB вернул пустой каталог — сборка отменена');
   }
 
+  const assetSources = [
+    new URL('./links.js', import.meta.url),
+    ...['style.css', 'search.js', 'order-form.js'].map(a => new URL(`../static/${a}`, import.meta.url)),
+  ];
+  const version = await assetVersion(assetSources);
+
   await mkdir(outDir, { recursive: true });
-  await writeFile(path.join(outDir, 'index.html'), renderIndexPage(products));
+  await writeFile(path.join(outDir, 'index.html'), renderIndexPage(products, version));
   await writeFile(path.join(outDir, 'sitemap.xml'), renderSitemap(products, baseUrl));
   await writeFile(path.join(outDir, 'robots.txt'), renderRobotsTxt(baseUrl));
 
   for (const product of products) {
     const productDir = path.join(outDir, 'tovar', String(product.nmId));
     await mkdir(productDir, { recursive: true });
-    await writeFile(path.join(productDir, 'index.html'), renderProductPage(product));
+    await writeFile(path.join(productDir, 'index.html'), renderProductPage(product, version));
   }
 
-  await copyFile(new URL('./links.js', import.meta.url), path.join(outDir, 'links.js'));
-  for (const asset of ['style.css', 'search.js', 'order-form.js']) {
-    await copyFile(new URL(`../static/${asset}`, import.meta.url), path.join(outDir, asset));
+  for (const source of assetSources) {
+    await copyFile(source, path.join(outDir, path.basename(source.pathname)));
   }
 
   return products.length;
