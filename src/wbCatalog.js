@@ -57,13 +57,14 @@ export async function fetchAllClockProducts(token, {
     const cards = data.cards || [];
 
     for (const card of cards) {
-      const photo = card.photos?.[0]?.big;
-      if (!photo) continue;
+      const photos = (card.photos || []).map(p => p.big).filter(Boolean);
+      if (photos.length === 0) continue;
       byNmId.set(card.nmID, {
         nmId: card.nmID,
         name: (card.title || '').trim(),
         description: (card.description || '').trim(),
-        photo,
+        photo: photos[0], // для плитки в каталоге — только первое
+        photos,           // для страницы товара — все
         createdAt: card.createdAt || '',
       });
     }

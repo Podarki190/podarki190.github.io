@@ -20,8 +20,25 @@ test('fetchAllClockProducts returns name, description and photo for every card',
     name: 'Часы 1',
     description: 'Описание 1',
     photo: 'https://basket-46.wbbasket.ru/1/images/big/1.webp',
+    photos: ['https://basket-46.wbbasket.ru/1/images/big/1.webp'],
     createdAt: '2026-08-01T00:00:00Z',
   }]);
+});
+
+test('fetchAllClockProducts keeps every photo of a card, in WB order', async () => {
+  const fetchFn = async () => new Response(JSON.stringify({
+    cards: [card(1, {
+      photos: [
+        { big: 'https://basket-46.wbbasket.ru/1/images/big/1.webp' },
+        { big: 'https://basket-46.wbbasket.ru/1/images/big/2.webp' },
+        { c246x328: 'https://basket-46.wbbasket.ru/1/images/small/3.webp' }, // без big — пропускаем
+      ],
+    })],
+  }), { status: 200 });
+
+  const [product] = await fetchAllClockProducts('t', { fetchFn });
+  assert.equal(product.photos.length, 2);
+  assert.equal(product.photo, product.photos[0]);
 });
 
 test('fetchAllClockProducts puts the newest products first', async () => {

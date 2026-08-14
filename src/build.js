@@ -43,7 +43,7 @@ async function main() {
   console.log(`Built ${count} products into dist/ in ${Math.round((Date.now() - started) / 1000)}s`);
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main().catch((err) => {
     console.error(err);
     process.exitCode = 1;

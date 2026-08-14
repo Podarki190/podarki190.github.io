@@ -7,8 +7,35 @@ const product = {
   name: 'Часы настенные "Локомотив Ярославль"',
   description: 'А'.repeat(200),
   photo: 'https://basket-46.wbbasket.ru/x/images/big/1.webp',
+  photos: [
+    'https://basket-46.wbbasket.ru/x/images/big/1.webp',
+    'https://basket-46.wbbasket.ru/x/images/big/2.webp',
+    'https://basket-46.wbbasket.ru/x/images/big/3.webp',
+  ],
   createdAt: '2026-07-01T00:00:00Z',
 };
+
+test('renderProductPage shows every photo, the index tile only the first', () => {
+  const page = renderProductPage(product);
+  for (const src of product.photos) assert.ok(page.includes(src), `нет фото ${src}`);
+  assert.match(page, /3 фото/);
+
+  const index = renderIndexPage([product]);
+  assert.ok(index.includes(product.photos[0]));
+  assert.ok(!index.includes(product.photos[1]), 'на плитке должно быть одно фото');
+});
+
+test('renderProductPage falls back to the single photo when photos is missing', () => {
+  const { photos, ...withoutGallery } = product;
+  const page = renderProductPage(withoutGallery);
+  assert.ok(page.includes(product.photo));
+  assert.doesNotMatch(page, /фото — листайте/);
+});
+
+test('order buttons are colour-coded by channel', () => {
+  const page = renderProductPage(product);
+  for (const cls of ['btn-call', 'btn-wa', 'btn-tg', 'btn-wb']) assert.match(page, new RegExp(cls));
+});
 
 test('escapeHtml escapes quotes and angle brackets', () => {
   assert.equal(escapeHtml(`<b>"Тест" & Co</b>`), '&lt;b&gt;&quot;Тест&quot; &amp; Co&lt;/b&gt;');
