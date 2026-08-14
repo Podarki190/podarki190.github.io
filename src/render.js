@@ -98,9 +98,21 @@ function renderGallery(product) {
   </div>`;
 }
 
-export function renderProductPage(product, version = '') {
+// Соседи известны уже на сборке: каталог отсортирован, сосед — просто следующий
+// элемент массива. Если человек пришёл из поиска, product-nav.js переставит
+// ссылки на соседей по его подборке.
+function renderProductNav({ prev, next }) {
+  const arrow = (product, cls, sign, label) => product
+    ? `<a class="pnav ${cls}" id="pnav-${cls}" href="../${product.nmId}/" title="${escapeHtml(product.name)}" rel="${label}">${sign}</a>`
+    : `<span class="pnav ${cls} pnav-off" id="pnav-${cls}">${sign}</span>`;
+  return `${arrow(prev, 'prev', '‹', 'prev')}${arrow(next, 'next', '›', 'next')}
+  <p id="pnav-context"></p>`;
+}
+
+export function renderProductPage(product, version = '', neighbours = {}) {
   const safeName = escapeHtml(product.name);
-  const body = `<a href="../../">← Ко всем часам</a>
+  const body = `<a href="../../" id="back-link">← Ко всем часам</a>
+${renderProductNav(neighbours)}
 <article class="product">
   ${renderGallery(product)}
   <div class="product-info">
@@ -123,7 +135,7 @@ export function renderProductPage(product, version = '') {
     description: truncate(product.description, 150),
     body,
     prefix: '../../',
-    scripts: ['order-form.js'],
+    scripts: ['order-form.js', 'product-nav.js'],
     version,
   });
 }

@@ -32,6 +32,21 @@ test('renderProductPage falls back to the single photo when photos is missing', 
   assert.doesNotMatch(page, /фото — листайте/);
 });
 
+test('product page links to its neighbours in the catalog', () => {
+  const prev = { ...product, nmId: 111, name: 'Предыдущие часы' };
+  const next = { ...product, nmId: 222, name: 'Следующие часы' };
+  const page = renderProductPage(product, '', { prev, next });
+  assert.match(page, /href="\.\.\/111\/"/);
+  assert.match(page, /href="\.\.\/222\/"/);
+  assert.match(page, /title="Следующие часы"/);
+});
+
+test('the first and last product get disabled arrows, not broken links', () => {
+  const page = renderProductPage(product, '', { next: { ...product, nmId: 222 } });
+  assert.match(page, /<span class="pnav prev pnav-off"/);
+  assert.match(page, /href="\.\.\/222\/"/);
+});
+
 test('order buttons are colour-coded by channel', () => {
   const page = renderProductPage(product);
   for (const cls of ['btn-call', 'btn-wa', 'btn-tg', 'btn-wb']) assert.match(page, new RegExp(cls));

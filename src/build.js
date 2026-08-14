@@ -25,7 +25,8 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
 
   const assetSources = [
     new URL('./links.js', import.meta.url),
-    ...['style.css', 'search.js', 'order-form.js'].map(a => new URL(`../static/${a}`, import.meta.url)),
+    ...['style.css', 'search.js', 'order-form.js', 'product-nav.js']
+      .map(a => new URL(`../static/${a}`, import.meta.url)),
   ];
   const version = await assetVersion(assetSources);
 
@@ -34,10 +35,20 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
   await writeFile(path.join(outDir, 'sitemap.xml'), renderSitemap(products, baseUrl));
   await writeFile(path.join(outDir, 'robots.txt'), renderRobotsTxt(baseUrl));
 
-  for (const product of products) {
+  // Список для стрелок «вперёд-назад» по результатам поиска. Только id и
+  // название в нижнем регистре — качается лишь при заходе из поиска.
+  await writeFile(
+    path.join(outDir, 'catalog.json'),
+    JSON.stringify(products.map(p => [p.nmId, p.name.toLowerCase()])),
+  );
+
+  for (const [i, product] of products.entries()) {
     const productDir = path.join(outDir, 'tovar', String(product.nmId));
     await mkdir(productDir, { recursive: true });
-    await writeFile(path.join(productDir, 'index.html'), renderProductPage(product, version));
+    await writeFile(
+      path.join(productDir, 'index.html'),
+      renderProductPage(product, version, { prev: products[i - 1], next: products[i + 1] }),
+    );
   }
 
   for (const source of assetSources) {

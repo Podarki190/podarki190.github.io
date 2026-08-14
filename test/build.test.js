@@ -51,6 +51,10 @@ test('buildSite writes index, one page per product with a photo, sitemap and rob
 
   assert.match(await readFile(path.join(outDir, 'robots.txt'), 'utf8'), /Sitemap:/);
 
+  // список для стрелок по результатам поиска: только опубликованные товары
+  const catalog = JSON.parse(await readFile(path.join(outDir, 'catalog.json'), 'utf8'));
+  assert.deepEqual(catalog, [[3, 'часы в'], [1, 'часы а']]);
+
   // отпечаток стилей должен быть один и тот же на всех страницах
   const stamp = index.match(/style\.css\?v=([a-f0-9]{8})/);
   assert.ok(stamp, 'на главной нет версии стилей');
