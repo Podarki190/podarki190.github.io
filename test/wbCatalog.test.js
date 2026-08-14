@@ -91,7 +91,40 @@ test('fetchAllClockProducts defaults missing title/description to empty strings'
   assert.equal(product.description, '');
 });
 
-test('fetchAllClockProducts throws with a readable message on API error', async () => {
+test('fetchAllClockProducts throws with a readable message when retries run out', async () => {
   const fetchFn = async () => new Response('rate limited', { status: 429 });
-  await assert.rejects(() => fetchAllClockProducts('t', { fetchFn }), /429/);
+  await assert.rejects(() => fetchAllClockProducts('t', { fetchFn, retries: 2, retryDelayMs: 0 }), /429/);
+});
+
+test('fetchAllClockProducts does not retry an error that will not fix itself', async () => {
+  let calls = 0;
+  const fetchFn = async () => { calls++; return new Response('bad token', { status: 401 }); };
+  await assert.rejects(() => fetchAllClockProducts('t', { fetchFn, retryDelayMs: 0 }), /401/);
+  assert.equal(calls, 1);
+});
+
+// Ровно то, что убило первую живую сборку: обрыв связи на середине выкачки.
+test('fetchAllClockProducts survives a dropped connection and finishes the crawl', async () => {
+  let calls = 0;
+  const fetchFn = async () => {
+    calls++;
+    if (calls === 1) return new Response(JSON.stringify({ cards: [card(1)] }), { status: 200 });
+    if (calls === 2) throw new TypeError('terminated'); // ECONNRESET на второй странице
+    return new Response(JSON.stringify({ cards: [] }), { status: 200 });
+  };
+  const products = await fetchAllClockProducts('t', { fetchFn, pageSize: 1, retryDelayMs: 0 });
+  assert.equal(products.length, 1);
+  assert.equal(calls, 3);
+});
+
+test('fetchAllClockProducts retries a rate limit and then succeeds', async () => {
+  let calls = 0;
+  const fetchFn = async () => {
+    calls++;
+    return calls === 1
+      ? new Response('rate limited', { status: 429 })
+      : new Response(JSON.stringify({ cards: [card(1)] }), { status: 200 });
+  };
+  const products = await fetchAllClockProducts('t', { fetchFn, retryDelayMs: 0 });
+  assert.equal(products.length, 1);
 });
