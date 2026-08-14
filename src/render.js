@@ -68,6 +68,7 @@ ${scripts.map(s => `<script type="module" src="${prefix}${s}"></script>`).join('
 export function renderIndexPage(products) {
   const body = `<h1>Настенные часы — каталог</h1>
 <input id="search" type="search" placeholder="Поиск по названию...">
+<p id="search-count"></p>
 <div class="grid">
 ${products.map(renderCard).join('\n')}
 </div>`;
