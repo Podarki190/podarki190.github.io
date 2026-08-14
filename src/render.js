@@ -69,15 +69,15 @@ ${scripts.map(s => `<script type="module" src="${prefix}${s}${v}"></script>`).jo
 }
 
 export function renderIndexPage(products, version = '') {
-  const body = `<h1>Настенные часы — каталог</h1>
+  const body = `<h1>Уникальные настенные часы — ручная работа мастеров из города Клин</h1>
 <input id="search" type="search" placeholder="Поиск по названию...">
 <p id="search-count"></p>
 <div class="grid">
 ${products.map(renderCard).join('\n')}
 </div>`;
   return pageShell({
-    title: 'Настенные часы — каталог, бесплатная доставка по России',
-    description: `${products.length} моделей настенных часов. Цена ${SALE_PRICE} ₽, доставка по всей России бесплатная.`,
+    title: 'Уникальные настенные часы — ручная работа мастеров из города Клин — Каталог',
+    description: `${products.length} моделей настенных часов ручной работы из Клина. Цена ${SALE_PRICE} ₽, доставка по всей России бесплатная.`,
     body,
     scripts: ['search.js'],
     version,
