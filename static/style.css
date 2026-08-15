@@ -39,12 +39,12 @@ a { color: var(--brass-deep); }
 /* ── темы ──────────────────────────────────────────────────── */
 .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.8rem; }
 .chip {
-  padding: 0.4rem 0.85rem; border-radius: 999px; cursor: pointer;
+  display: inline-block; padding: 0.4rem 0.85rem; border-radius: 999px;
   border: 1px dashed var(--brass); background: var(--surface); color: var(--ink-muted);
-  font-size: 0.9rem; font-family: inherit;
+  font-size: 0.9rem; text-decoration: none;
 }
 .chip:hover { background: #fff; }
-.chip[aria-pressed="true"] {
+.chip[aria-current="page"] {
   background: var(--brass); border-style: solid; border-color: var(--brass-deep);
   color: #fff; font-weight: 600;
 }
@@ -103,6 +103,20 @@ a { color: var(--brass-deep); }
 #order-form h2 { font-size: 1.2rem; margin: 0; }
 #order-form label { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.9rem; color: var(--ink-muted); }
 #order-form input { padding: 0.6rem; font-size: 1rem; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); }
+
+/* ── подтверждение заказа ──────────────────────────────────── */
+.order-done {
+  max-width: 480px; margin-top: 2rem; padding: 1.1rem 1.2rem;
+  border: 2px solid var(--pine); border-radius: 12px; background: var(--surface);
+}
+.order-done h2 { margin: 0 0 0.6rem; font-size: 1.25rem; color: var(--pine); }
+.order-done p { margin: 0 0 0.6rem; line-height: 1.5; }
+.order-done-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1rem 0 0.8rem; }
+.order-text {
+  margin: 0; padding: 0.7rem; border-radius: 8px; background: #fff;
+  border: 1px dashed var(--line); font-size: 0.85rem; white-space: pre-wrap;
+  font-family: inherit; color: var(--ink-muted);
+}
 
 /* ── шапка и подвал ────────────────────────────────────────── */
 .site-header {

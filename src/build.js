@@ -6,6 +6,7 @@ import { fetchAllClockProducts } from './wbCatalog.js';
 import { renderIndexPage, renderProductPage, renderStaticPage } from './render.js';
 import { renderSitemap, renderRobotsTxt } from './sitemap.js';
 import { PAGES } from './pages.js';
+import { ALL_THEMES, themesOf } from './themes.js';
 
 // Короткий отпечаток стилей и скриптов — попадает в адрес файла (?v=…), чтобы
 // после правки вёрстки браузер скачал новую версию, а не показывал старую из кэша.
@@ -33,7 +34,6 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
 
   await mkdir(outDir, { recursive: true });
   await writeFile(path.join(outDir, 'index.html'), renderIndexPage(products, version));
-  await writeFile(path.join(outDir, 'sitemap.xml'), renderSitemap(products, baseUrl, PAGES.map(p => p.slug)));
   await writeFile(path.join(outDir, 'robots.txt'), renderRobotsTxt(baseUrl));
 
   for (const page of PAGES) {
@@ -41,6 +41,22 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
     await mkdir(pageDir, { recursive: true });
     await writeFile(path.join(pageDir, 'index.html'), renderStaticPage(page, version));
   }
+
+  // У каждой темы свой адрес и своя страница — иначе поисковик её не увидит.
+  const themePages = [];
+  for (const theme of ALL_THEMES) {
+    const inTheme = products.filter(p => themesOf(p).includes(theme.id));
+    if (inTheme.length === 0) continue;
+    const themeDir = path.join(outDir, 'tema', theme.id);
+    await mkdir(themeDir, { recursive: true });
+    await writeFile(path.join(themeDir, 'index.html'), renderIndexPage(inTheme, version, theme));
+    themePages.push(`tema/${theme.id}`);
+  }
+
+  await writeFile(
+    path.join(outDir, 'sitemap.xml'),
+    renderSitemap(products, baseUrl, [...PAGES.map(p => p.slug), ...themePages]),
+  );
 
   for (const [i, product] of products.entries()) {
     const productDir = path.join(outDir, 'tovar', String(product.nmId));

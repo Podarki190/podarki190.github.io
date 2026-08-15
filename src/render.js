@@ -4,7 +4,7 @@ import {
   buildCardWhatsAppMessage, truncate,
 } from './links.js';
 import { PAGES } from './pages.js';
-import { THEMES, OTHER_THEME, themeOf } from './themes.js';
+import { ALL_THEMES, themesOf } from './themes.js';
 
 const SITE_NAME = 'Уникальные настенные часы';
 const SITE_TAGLINE = 'ручная работа мастеров из города Клин';
@@ -75,7 +75,7 @@ function renderOrderButtons(product) {
 function renderCard(product, hrefPrefix = 'tovar/') {
   const safeName = escapeHtml(product.name);
   const href = `${hrefPrefix}${product.nmId}/`;
-  return `<article class="card" data-name="${escapeHtml(product.name.toLowerCase())}" data-theme="${themeOf(product.name, product.description)}">
+  return `<article class="card" data-name="${escapeHtml(product.name.toLowerCase())}" data-themes="${themesOf(product).join(' ')}">
     <a href="${href}"><img src="${escapeHtml(product.photo)}" loading="lazy" alt="${safeName}"></a>
     <h3><a href="${href}">${safeName}</a></h3>
     <p>${escapeHtml(truncate(product.description, 150))}</p>
@@ -111,32 +111,47 @@ ${scripts.map(s => `<script type="module" src="${prefix}${s}${v}"></script>`).jo
 `;
 }
 
-export function renderIndexPage(products, version = '') {
-  // Показываем только те темы, что реально есть в каталоге: пустая кнопка
-  // «К празднику» на три товара выглядит как поломка.
-  const present = new Set(products.map(p => themeOf(p.name, p.description)));
-  const chips = [{ id: '', label: 'Все часы' }, ...THEMES, OTHER_THEME]
-    .filter(theme => !theme.id || present.has(theme.id))
-    .map(theme => `<button class="chip" type="button" data-theme="${theme.id}"${
-      theme.id ? '' : ' aria-pressed="true"'}>${theme.label}</button>`)
+export function renderIndexPage(products, version = '', theme = null) {
+  // Чипсы — обычные ссылки, а не кнопки: у каждой темы свой адрес, поэтому
+  // поисковик её видит и индексирует. Через решётку (#t=...) тема оставалась
+  // невидимой — для поисковика это всё та же главная страница.
+  const prefix = theme ? '../../' : '';
+  const present = new Set(products.flatMap(p => themesOf(p)));
+  const chips = [{ id: '', label: 'Все часы' }, ...ALL_THEMES]
+    .filter(item => !item.id || present.has(item.id) || (theme && item.id === theme.id))
+    .map(item => {
+      const active = theme ? item.id === theme.id : !item.id;
+      const href = item.id ? `${prefix}tema/${item.id}/` : prefix || './';
+      return `<a class="chip" href="${href}"${active ? ' aria-current="page"' : ''}>${item.label}</a>`;
+    })
     .join('\n    ');
 
-  const body = `<h1>Уникальные настенные часы — ручная работа мастеров из города Клин</h1>
+  const heading = theme
+    ? `${theme.label} — настенные часы`
+    : 'Уникальные настенные часы — ручная работа мастеров из города Клин';
+
+  const body = `<h1>${escapeHtml(heading)}</h1>
 <input id="search" type="search" placeholder="Поиск по названию...">
 <div class="chips" id="chips">
     ${chips}
 </div>
 <p id="search-count"></p>
 <div class="grid">
-${products.map(p => renderCard(p)).join('\n')}
+${products.map(p => renderCard(p, `${prefix}tovar/`)).join('\n')}
 </div>`;
+
   return pageShell({
-    title: 'Уникальные настенные часы — ручная работа мастеров из города Клин',
-    description: `${products.length} моделей настенных часов ручной работы из Клина. Цена ${SALE_PRICE} ₽, доставка по всей России бесплатная.`,
+    title: theme
+      ? `${theme.label}: настенные часы ручной работы, ${products.length} моделей`
+      : 'Уникальные настенные часы — ручная работа мастеров из города Клин',
+    description: theme
+      ? `${theme.label} — ${products.length} моделей настенных часов ручной работы из Клина. Цена ${SALE_PRICE} ₽, доставка по всей России бесплатная.`
+      : `${products.length} моделей настенных часов ручной работы из Клина. Цена ${SALE_PRICE} ₽, доставка по всей России бесплатная.`,
     body,
+    prefix,
     scripts: ['search.js'],
     version,
-    current: 'index',
+    current: theme ? '' : 'index',
   });
 }
 
@@ -201,6 +216,7 @@ export function renderProductPage(product, version = '', neighbours = {}) {
       <button class="btn btn-wa" type="submit" data-target="whatsapp">Отправить в WhatsApp</button>
       <button class="btn btn-tg" type="submit" data-target="telegram">Отправить в Telegram</button>
     </form>
+    <section id="order-done" class="order-done" hidden></section>
     <p class="description">${escapeHtml(product.description)}</p>
   </div>
 </article>

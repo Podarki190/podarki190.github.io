@@ -24,9 +24,21 @@ export function buildCardWhatsAppMessage(name, nmId) {
   return `Здравствуйте! Интересуют часы «${name}» (арт. ${nmId})`;
 }
 
-export function buildOrderMessage({ name, nmId, fio, phone, address }) {
+// Номер заказа — последние 4 цифры телефона и дата. Покупатель узнаёт свой
+// номер с одного взгляда, а у продавца два заказа с одного телефона в один
+// день не сольются в один: к ним добавляется буква.
+export function buildOrderNumber(phone, date = new Date()) {
+  const digits = String(phone).replace(/\D/g, '');
+  const tail = digits.slice(-4).padStart(4, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  return `${tail}-${day}${month}`;
+}
+
+export function buildOrderMessage({ name, nmId, fio, phone, address, orderNumber }) {
   return [
     `Здравствуйте! Хочу заказать часы «${name}» (арт. ${nmId}).`,
+    `Заказ № ${orderNumber || buildOrderNumber(phone)}`,
     `ФИО: ${fio}`,
     `Телефон: ${phone}`,
     `Город/адрес доставки: ${address}`,

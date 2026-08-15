@@ -49,18 +49,32 @@ test('no similar block when there are no neighbours', () => {
   assert.doesNotMatch(renderProductPage(product), /Похожие товары/);
 });
 
-test('index shows theme chips and tags every tile with its theme', () => {
-  const clock = { ...product, name: 'Часы настенные "Спецназ"' };
+test('index tags every tile with its themes and links to theme pages', () => {
+  const clock = { ...product, name: 'Часы настенные "Лучшей маме-парикмахеру"' };
   const html = renderIndexPage([clock]);
   assert.match(html, /class="chips"/);
-  assert.match(html, /data-theme="voennym"[^>]*>Военным и службам</);
-  assert.match(html, /<article class="card"[^>]*data-theme="voennym"/);
+  // тем у товара может быть несколько: сюжет и получатель
+  assert.match(html, /<article class="card"[^>]*data-themes="professii mame"/);
+  // чипс — ссылка, иначе тема не попадёт в поисковую выдачу
+  assert.match(html, /<a class="chip" href="tema\/professii\/"/);
 });
 
 test('chips list only themes actually present in the catalog', () => {
   const html = renderIndexPage([{ ...product, name: 'Часы настенные "Спецназ"' }]);
-  assert.match(html, /data-theme=""[^>]*>Все часы</);
+  assert.match(html, />Все часы</);
   assert.doesNotMatch(html, />Авто и мото</);
+});
+
+// Тема должна быть отдельной страницей со своим заголовком — иначе поисковик
+// её не видит: всё, что после решётки, для него не существует.
+test('a theme page has its own title, heading and relative links', () => {
+  const theme = { id: 'rusrock', label: 'Русский рок' };
+  const html = renderIndexPage([product], '', theme);
+  assert.match(html, /<title>Русский рок: настенные часы[^<]*1 моделей<\/title>/);
+  assert.match(html, /<h1>Русский рок — настенные часы<\/h1>/);
+  assert.match(html, /href="\.\.\/\.\.\/tovar\/1259100136\/"/);
+  assert.match(html, /<a class="chip" href="\.\.\/\.\.\/tema\/rusrock\/" aria-current="page"/);
+  assert.match(html, /href="\.\.\/\.\.\/style\.css"/);
 });
 
 test('every page carries the header and footer navigation', () => {

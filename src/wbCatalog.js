@@ -61,6 +61,7 @@ export async function fetchAllClockProducts(token, {
       if (photos.length === 0) continue;
       byNmId.set(card.nmID, {
         nmId: card.nmID,
+        vendorCode: card.vendorCode || '',
         name: (card.title || '').trim(),
         description: (card.description || '').trim(),
         photo: photos[0], // для плитки в каталоге — только первое

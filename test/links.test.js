@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   PHONE, TELEGRAM, ORIGINAL_PRICE, SALE_PRICE,
   buildTelLink, buildWhatsAppLink, buildTelegramLink, buildWbLink,
-  buildCardWhatsAppMessage, buildOrderMessage, truncate,
+  buildCardWhatsAppMessage, buildOrderMessage, buildOrderNumber, truncate,
 } from '../src/links.js';
 
 test('constants match the seller contact info and fixed pricing', () => {
@@ -35,6 +35,23 @@ test('buildCardWhatsAppMessage names the product and article', () => {
   const msg = buildCardWhatsAppMessage('Часы "Ярославль"', 1259100136);
   assert.match(msg, /Часы "Ярославль"/);
   assert.match(msg, /1259100136/);
+});
+
+test('buildOrderNumber is the last four phone digits plus the date', () => {
+  assert.equal(buildOrderNumber('+7 (926) 664-21-21', new Date(2026, 7, 15)), '2121-1508');
+  assert.equal(buildOrderNumber('89991234567', new Date(2026, 0, 3)), '4567-0301');
+});
+
+test('buildOrderNumber survives a short or messy phone', () => {
+  assert.match(buildOrderNumber('12', new Date(2026, 7, 15)), /^0012-1508$/);
+});
+
+test('buildOrderMessage carries the order number', () => {
+  const msg = buildOrderMessage({
+    name: 'Часы', nmId: 1, fio: 'Иванов', phone: '+79266642121',
+    address: 'Клин', orderNumber: '2121-1508',
+  });
+  assert.match(msg, /Заказ № 2121-1508/);
 });
 
 test('buildOrderMessage includes all order fields', () => {

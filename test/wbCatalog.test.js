@@ -17,6 +17,7 @@ test('fetchAllClockProducts returns name, description and photo for every card',
   const products = await fetchAllClockProducts('t', { fetchFn });
   assert.deepEqual(products, [{
     nmId: 1,
+    vendorCode: '',
     name: 'Часы 1',
     description: 'Описание 1',
     photo: 'https://basket-46.wbbasket.ru/1/images/big/1.webp',
