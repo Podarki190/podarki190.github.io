@@ -1,5 +1,5 @@
 import {
-  PHONE, TELEGRAM, ORIGINAL_PRICE, SALE_PRICE, SHIPPING_TEXT,
+  PHONE, TELEGRAM, ORIGINAL_PRICE, SALE_PRICE, SHIPPING_TEXT, ORDER_ENDPOINT,
   buildTelLink, buildWhatsAppLink, buildTelegramLink, buildWbLink,
   buildCardWhatsAppMessage, truncate,
 } from './links.js';
@@ -213,6 +213,8 @@ export function renderProductPage(product, version = '', neighbours = {}) {
       <label>ФИО <input id="fio" required></label>
       <label>Телефон <input id="phone" type="tel" required></label>
       <label>Город и адрес доставки <input id="address" required></label>
+      ${ORDER_ENDPOINT ? `<button class="btn btn-order" type="button" id="order-send">Оформить заказ</button>
+      <p class="order-alt">или напишите нам сами:</p>` : ''}
       <button class="btn btn-wa" type="submit" data-target="whatsapp">Отправить в WhatsApp</button>
       <button class="btn btn-tg" type="submit" data-target="telegram">Отправить в Telegram</button>
     </form>

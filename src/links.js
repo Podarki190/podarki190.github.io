@@ -4,6 +4,12 @@ export const ORIGINAL_PRICE = 7000;
 export const SALE_PRICE = 1890;
 export const SHIPPING_TEXT = 'Доставка по всей России Бесплатная';
 
+// Куда уходит заказ с сайта. Пока пусто — форма работает по-старому, через
+// мессенджер. Как появится адрес веб-приложения (docs/prijom-zakazov.md),
+// заказ начнёт уходить сам, а покупатель увидит просто «Заказ принят».
+export const ORDER_ENDPOINT = '';
+export const ORDER_SECRET = '';
+
 export function buildTelLink() {
   return `tel:${PHONE}`;
 }
