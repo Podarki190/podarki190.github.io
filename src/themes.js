@@ -32,14 +32,15 @@ export const SUBJECTS = [
       'radiohead', 'рамштайн', 'металлика', 'нирвана', 'битлз', 'квин'],
   },
   {
-    id: 'pop', label: 'Поп-музыка', nameOnly: true,
+    id: 'pop', label: 'Поп-музыка',
     keys: ['michael jackson', 'майкл джексон', 'taylor swift', 'мадонна', 'madonna', 'билан',
       'пугачёв', 'пугачев', 'киркоров', 'бузова', 'ротару', 'леди гага', 'lady gaga', 'бейонсе',
-      'abba', 'modern talking', 'поп-музык', 'k-pop', 'bts'],
+      'abba', 'modern talking', 'поп-музык', 'k-pop', 'bts', 'ariana', 'adele', 'rihanna',
+      'justin bieber', 'бибер', 'певица', 'певец', 'поп-исполнител', 'поп-икон', 'эстрад'],
   },
   {
-    id: 'rap', label: 'Рэп и хип-хоп', nameOnly: true,
-    keys: ['рэп', 'хип-хоп', 'hip-hop', 'oxxxymiron', 'оксимирон', 'баста', 'каспийский груз',
+    id: 'rap', label: 'Рэп и хип-хоп',
+    keys: ['рэп', 'рэпер', 'хип-хоп', 'hip-hop', 'oxxxymiron', 'оксимирон', 'баста', 'каспийский груз',
       'скриптонит', 'моргенштерн', 'элджей', 'eminem', 'эминем', '2pac', 'tupac',
       'snoop dogg', 'kanye', 'граффити'],
   },
@@ -152,7 +153,9 @@ export const TAGS = [
   { id: 'dedushke', label: 'Дедушке', keys: ['дедушк', 'деду', 'дедул'] },
   { id: 'podruge', label: 'Подруге', keys: ['подруг'] },
   { id: 'drugu', label: 'Другу', keys: ['другу', 'друга ', 'друзь', 'дружб', 'приятел'] },
-  { id: 'vinyl', label: 'Из виниловых пластинок', keys: ['винил', 'пластинк'] },
+  // nameOnly: в биографиях артистов «выпустила пластинку» встречается сплошь,
+  // и по описанию в винил уезжали 2355 обычных часов с певцами.
+  { id: 'vinyl', label: 'Из виниловых пластинок', nameOnly: true, keys: ['винил', 'пластинк'] },
 ];
 
 // Двухслойные распознаются не по тексту, а по артикулу поставщика: у этой
@@ -182,7 +185,7 @@ export function themesOf({ name = '', description = '', vendorCode = '' } = {}) 
 
   const themes = [found ? found.id : OTHER_THEME.id];
   for (const tag of TAGS) {
-    if (MATCHERS.get(tag.id).test(subject)) themes.push(tag.id);
+    if (MATCHERS.get(tag.id).test(tag.nameOnly ? title : subject)) themes.push(tag.id);
   }
   if (String(vendorCode).toLowerCase().endsWith('.jiv')) themes.push(LAYERED.id);
 
