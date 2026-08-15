@@ -37,6 +37,16 @@ test('music is split by genre, with a catch-all below the genres', () => {
   assert.ok(themes('Часы настенные "Гитара на стене"').includes('muzyka'));
 });
 
+// Отдельная профессия — это ещё и посадочная страница под живой запрос
+// «часы в подарок учителю», поэтому у неё свой заголовок.
+test('profession tags carry their own search heading', () => {
+  const uchitel = TAGS.find(t => t.id === 'uchitel');
+  assert.match(uchitel.heading, /в подарок учителю/);
+  assert.match(uchitel.title, /в подарок учителю/);
+  assert.ok(themes('Часы настенные "Лучший учитель"').includes('uchitel'));
+  assert.ok(themes('Часы настенные "Лучшая медсестра"').includes('medsestra'));
+});
+
 test('recipient tags stack on top of the subject', () => {
   const found = themes('Часы настенные "Лучшей маме-парикмахеру"');
   assert.ok(found.includes('professii'), 'сюжет — профессия');

@@ -54,7 +54,7 @@ test('index tags every tile with its themes and links to theme pages', () => {
   const html = renderIndexPage([clock]);
   assert.match(html, /class="chips"/);
   // тем у товара может быть несколько: сюжет и получатель
-  assert.match(html, /<article class="card"[^>]*data-themes="professii mame"/);
+  assert.match(html, /<article class="card"[^>]*data-themes="professii parikmaher mame"/);
   // чипс — ссылка, иначе тема не попадёт в поисковую выдачу
   assert.match(html, /<a class="chip" href="tema\/professii\/"/);
 });

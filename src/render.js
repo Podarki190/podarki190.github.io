@@ -126,8 +126,10 @@ export function renderIndexPage(products, version = '', theme = null) {
     })
     .join('\n    ');
 
+  // У темы может быть свой заголовок под живой поисковый запрос
+  // («Настенные часы в подарок учителю»), иначе собираем из названия темы.
   const heading = theme
-    ? `${theme.label} — настенные часы`
+    ? theme.heading || `${theme.label} — настенные часы`
     : 'Уникальные настенные часы — ручная работа мастеров из города Клин';
 
   const body = `<h1>${escapeHtml(heading)}</h1>
@@ -142,10 +144,10 @@ ${products.map(p => renderCard(p, `${prefix}tovar/`)).join('\n')}
 
   return pageShell({
     title: theme
-      ? `${theme.label}: настенные часы ручной работы, ${products.length} моделей`
+      ? theme.title || `${theme.label}: настенные часы ручной работы, ${products.length} моделей`
       : 'Уникальные настенные часы — ручная работа мастеров из города Клин',
     description: theme
-      ? `${theme.label} — ${products.length} моделей настенных часов ручной работы из Клина. Цена ${SALE_PRICE} ₽, доставка по всей России бесплатная.`
+      ? `${theme.heading || theme.label} — ${products.length} моделей ручной работы из Клина. Цена ${SALE_PRICE} ₽, доставка по всей России бесплатная.`
       : `${products.length} моделей настенных часов ручной работы из Клина. Цена ${SALE_PRICE} ₽, доставка по всей России бесплатная.`,
     body,
     prefix,
