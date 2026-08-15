@@ -49,6 +49,20 @@ test('no similar block when there are no neighbours', () => {
   assert.doesNotMatch(renderProductPage(product), /Похожие товары/);
 });
 
+test('index shows theme chips and tags every tile with its theme', () => {
+  const clock = { ...product, name: 'Часы настенные "Спецназ"' };
+  const html = renderIndexPage([clock]);
+  assert.match(html, /class="chips"/);
+  assert.match(html, /data-theme="voennym"[^>]*>Военным и службам</);
+  assert.match(html, /<article class="card"[^>]*data-theme="voennym"/);
+});
+
+test('chips list only themes actually present in the catalog', () => {
+  const html = renderIndexPage([{ ...product, name: 'Часы настенные "Спецназ"' }]);
+  assert.match(html, /data-theme=""[^>]*>Все часы</);
+  assert.doesNotMatch(html, />Авто и мото</);
+});
+
 test('every page carries the header and footer navigation', () => {
   for (const [page, prefix] of [
     [renderIndexPage([product]), ''],

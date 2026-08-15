@@ -4,6 +4,7 @@ import {
   buildCardWhatsAppMessage, truncate,
 } from './links.js';
 import { PAGES } from './pages.js';
+import { THEMES, OTHER_THEME, themeOf } from './themes.js';
 
 const SITE_NAME = 'Уникальные настенные часы';
 const SITE_TAGLINE = 'ручная работа мастеров из города Клин';
@@ -74,7 +75,7 @@ function renderOrderButtons(product) {
 function renderCard(product, hrefPrefix = 'tovar/') {
   const safeName = escapeHtml(product.name);
   const href = `${hrefPrefix}${product.nmId}/`;
-  return `<article class="card" data-name="${escapeHtml(product.name.toLowerCase())}">
+  return `<article class="card" data-name="${escapeHtml(product.name.toLowerCase())}" data-theme="${themeOf(product.name, product.description)}">
     <a href="${href}"><img src="${escapeHtml(product.photo)}" loading="lazy" alt="${safeName}"></a>
     <h3><a href="${href}">${safeName}</a></h3>
     <p>${escapeHtml(truncate(product.description, 150))}</p>
@@ -111,8 +112,20 @@ ${scripts.map(s => `<script type="module" src="${prefix}${s}${v}"></script>`).jo
 }
 
 export function renderIndexPage(products, version = '') {
+  // Показываем только те темы, что реально есть в каталоге: пустая кнопка
+  // «К празднику» на три товара выглядит как поломка.
+  const present = new Set(products.map(p => themeOf(p.name, p.description)));
+  const chips = [{ id: '', label: 'Все часы' }, ...THEMES, OTHER_THEME]
+    .filter(theme => !theme.id || present.has(theme.id))
+    .map(theme => `<button class="chip" type="button" data-theme="${theme.id}"${
+      theme.id ? '' : ' aria-pressed="true"'}>${theme.label}</button>`)
+    .join('\n    ');
+
   const body = `<h1>Уникальные настенные часы — ручная работа мастеров из города Клин</h1>
 <input id="search" type="search" placeholder="Поиск по названию...">
+<div class="chips" id="chips">
+    ${chips}
+</div>
 <p id="search-count"></p>
 <div class="grid">
 ${products.map(p => renderCard(p)).join('\n')}
