@@ -1,4 +1,13 @@
-export const PHONE = '+79266642121';
+export const PHONE = '+79266642121';        // основной, он же WhatsApp
+export const PHONE_EXTRA = '+79032203355';  // второй для звонков
+export const PHONES = [PHONE, PHONE_EXTRA];
+
+// +79266642121 → 8 (926) 664-21-21: в вёрстке телефон должен читаться так,
+// как его привыкли видеть, а в ссылке tel: — строго цифрами.
+export function formatPhone(phone) {
+  const d = String(phone).replace(/\D/g, '');
+  return `8 (${d.slice(1, 4)}) ${d.slice(4, 7)}-${d.slice(7, 9)}-${d.slice(9, 11)}`;
+}
 export const TELEGRAM = 'Podarki190';
 export const ORIGINAL_PRICE = 7000;
 export const SALE_PRICE = 1890;
@@ -14,8 +23,8 @@ export const SHIPPING_TEXT = 'Доставка по всей России Бес
 export const ORDER_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxo905W1Rw6mIJGCe1csVLNjwrz1KlFdWQV6aVVBm_4pgXl9rqzb1HMzyQH_snSNrmY/exec';
 export const ORDER_SECRET = 'fwen1MfDfaEzBpHkT9Fyo_PpRYkaUm8k';
 
-export function buildTelLink() {
-  return `tel:${PHONE}`;
+export function buildTelLink(phone = PHONE) {
+  return `tel:${phone}`;
 }
 
 export function buildWhatsAppLink(message) {

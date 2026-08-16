@@ -77,6 +77,14 @@ test('a theme page has its own title, heading and relative links', () => {
   assert.match(html, /href="\.\.\/\.\.\/style\.css"/);
 });
 
+test('both phone numbers are clickable in the header and footer', () => {
+  for (const html of [renderIndexPage([product]), renderProductPage(product), renderStaticPage(PAGES[0])]) {
+    assert.match(html, /<div class="site-phones">/);
+    assert.match(html, /href="tel:\+79266642121"[^>]*>8 \(926\) 664-21-21</);
+    assert.match(html, /href="tel:\+79032203355"[^>]*>8 \(903\) 220-33-55</);
+  }
+});
+
 test('every page carries the header and footer navigation', () => {
   for (const [page, prefix] of [
     [renderIndexPage([product]), ''],

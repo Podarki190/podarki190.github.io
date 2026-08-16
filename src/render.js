@@ -1,6 +1,6 @@
 import {
-  PHONE, TELEGRAM, ORIGINAL_PRICE, SALE_PRICE, LAYERED_PRICE, SHIPPING_TEXT, ORDER_ENDPOINT,
-  buildTelLink, buildWhatsAppLink, buildTelegramLink, buildWbLink,
+  PHONE, PHONES, TELEGRAM, ORIGINAL_PRICE, SALE_PRICE, LAYERED_PRICE, SHIPPING_TEXT, ORDER_ENDPOINT,
+  formatPhone, buildTelLink, buildWhatsAppLink, buildTelegramLink, buildWbLink,
   buildCardWhatsAppMessage, truncate,
 } from './links.js';
 import { PAGES } from './pages.js';
@@ -18,6 +18,14 @@ function renderNav(prefix, current) {
   ].join('\n      ');
 }
 
+// Оба номера кликабельны: на телефоне это звонок в одно касание, на
+// компьютере — понятная подпись, которую можно переписать.
+function renderPhones() {
+  return PHONES
+    .map(phone => `    <a class="phone" href="${buildTelLink(phone)}">${formatPhone(phone)}</a>`)
+    .join('\n');
+}
+
 function renderHeader(prefix, current) {
   return `<header class="site-header">
   <a class="brand" href="${prefix}">
@@ -27,6 +35,9 @@ function renderHeader(prefix, current) {
   <nav class="site-nav">
       ${renderNav(prefix, current)}
   </nav>
+  <div class="site-phones">
+${renderPhones()}
+  </div>
 </header>`;
 }
 
@@ -36,7 +47,7 @@ function renderFooter(prefix, current) {
       ${renderNav(prefix, current)}
   </nav>
   <p class="footer-contacts">
-    <a href="${buildTelLink()}">${PHONE}</a> ·
+${renderPhones()}
     <a href="${buildTelegramLink()}" target="_blank" rel="noopener">Telegram @${TELEGRAM}</a>
   </p>
   <p class="footer-note">${SITE_NAME} — ${SITE_TAGLINE}. ${SHIPPING_TEXT}.</p>

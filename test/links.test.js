@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  PHONE, TELEGRAM, ORIGINAL_PRICE, SALE_PRICE,
+  PHONE, PHONE_EXTRA, TELEGRAM, ORIGINAL_PRICE, SALE_PRICE, formatPhone,
   buildTelLink, buildWhatsAppLink, buildTelegramLink, buildWbLink,
   buildCardWhatsAppMessage, buildOrderMessage, buildOrderNumber, truncate,
 } from '../src/links.js';
@@ -13,8 +13,15 @@ test('constants match the seller contact info and fixed pricing', () => {
   assert.equal(SALE_PRICE, 1890);
 });
 
-test('buildTelLink produces a tel: link', () => {
+test('buildTelLink produces a tel: link for either number', () => {
   assert.equal(buildTelLink(), 'tel:+79266642121');
+  assert.equal(buildTelLink(PHONE_EXTRA), 'tel:+79032203355');
+});
+
+// В ссылке номер строго цифрами, а на экране — в привычном виде.
+test('formatPhone renders the number the way people read it', () => {
+  assert.equal(formatPhone('+79266642121'), '8 (926) 664-21-21');
+  assert.equal(formatPhone('+79032203355'), '8 (903) 220-33-55');
 });
 
 test('buildWhatsAppLink url-encodes the message and strips the leading +', () => {
