@@ -1,6 +1,7 @@
 import {
   PHONE, PHONES, TELEGRAM, ORIGINAL_PRICE, SALE_PRICE, LAYERED_PRICE, SHIPPING_TEXT, ORDER_ENDPOINT,
-  VK_LINK, formatPhone, buildTelLink, buildWhatsAppLink, buildTelegramLink, buildMaxLink, buildWbLink,
+  VK_LINK, METRIKA_ID, YANDEX_VERIFICATION, GOOGLE_VERIFICATION,
+  formatPhone, buildTelLink, buildWhatsAppLink, buildTelegramLink, buildMaxLink, buildWbLink,
   buildCardWhatsAppMessage, truncate,
 } from './links.js';
 import { PAGES } from './pages.js';
@@ -31,8 +32,11 @@ function renderPhones() {
 function renderHeader(prefix, current) {
   return `<header class="site-header">
   <a class="brand" href="${prefix}">
-    <span class="brand-name">${SITE_NAME}</span>
-    <span class="brand-tagline">${SITE_TAGLINE}</span>
+    <img class="brand-logo" src="${prefix}logo.webp" alt="" width="320" height="320">
+    <span class="brand-text">
+      <span class="brand-name">${SITE_NAME}</span>
+      <span class="brand-tagline">${SITE_TAGLINE}</span>
+    </span>
   </a>
   <nav class="site-nav">
       ${renderNav(prefix, current)}
@@ -112,7 +116,9 @@ function pageShell({ title, description, body, prefix = '', scripts = [], versio
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(description)}">
-<link rel="icon" href="${prefix}favicon.png${v}">
+<link rel="icon" href="${prefix}favicon.png${v}">${
+  YANDEX_VERIFICATION ? `\n<meta name="yandex-verification" content="${YANDEX_VERIFICATION}">` : ''}${
+  GOOGLE_VERIFICATION ? `\n<meta name="google-site-verification" content="${GOOGLE_VERIFICATION}">` : ''}
 <link rel="stylesheet" href="${prefix}style.css${v}">
 </head>
 <body>
@@ -121,7 +127,14 @@ ${renderHeader(prefix, current)}
 ${body}
 </main>
 ${renderFooter(prefix, current)}
-${scripts.map(s => `<script type="module" src="${prefix}${s}${v}"></script>`).join('\n')}
+${scripts.map(s => `<script type="module" src="${prefix}${s}${v}"></script>`).join('\n')}${METRIKA_ID ? `
+<script>
+(function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,
+a.parentNode.insertBefore(k,a)})(window,document,'script','https://mc.yandex.ru/metrika/tag.js','ym');
+ym(${METRIKA_ID},'init',{clickmap:true,trackLinks:true,accurateTrackBounce:true});
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/${METRIKA_ID}" style="position:absolute;left:-9999px" alt=""></div></noscript>` : ''}
 </body>
 </html>
 `;
