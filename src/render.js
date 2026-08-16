@@ -203,6 +203,8 @@ export function renderServicesIndex(version = '') {
     description: SERVICES_INDEX.description,
     body: `<article class="page services-page">
   <h1>Лазерная резка и гравировка в Клину</h1>
+  <img class="services-hero" src="../uslugi/masterskaya.jpg"
+    alt="Мастерская «Лазер Клин» в Клину: лазерные станки и готовые изделия из дерева">
   <p class="services-lead">Мастерская «Лазер Клин» на Литейной, 20: режем и гравируем по вашим макетам, изготавливаем печати, награды, упаковку и декор. Всё делается под заказ, поэтому стоимость считается по макету, материалу и тиражу — расскажите задачу, и мы посчитаем.</p>
   <div class="services-grid">
   ${cards}

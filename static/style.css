@@ -181,6 +181,10 @@ a { color: var(--brass-deep); }
    иначе витрина услуг ужимается до двух колонок. */
 .page.services-page { max-width: 1100px; }
 .services-lead { max-width: 720px; }
+.services-hero {
+  width: 100%; max-width: 1100px; border-radius: 12px; margin: 1rem 0 0.5rem;
+  aspect-ratio: 2 / 1; object-fit: cover;
+}
 .services-grid {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1.2rem; margin-top: 1.5rem;
