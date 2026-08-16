@@ -195,6 +195,12 @@ const SUBJECT_CHARS = 300;
 const matcher = (keys) => new RegExp(`(?:^|[^а-яёa-z0-9])(?:${keys.join('|')})`, 'i');
 const MATCHERS = new Map(ALL_THEMES.filter(t => t.keys).map(t => [t.id, matcher(t.keys)]));
 
+// Двухслойные различаются только артикулом поставщика — ни в названии, ни в
+// описании про исполнение не сказано. От этого же зависит цена.
+export function isLayered(product) {
+  return String(product?.vendorCode || '').toLowerCase().endsWith('.jiv');
+}
+
 export function themesOf({ name = '', description = '', vendorCode = '' } = {}) {
   const title = String(name).toLowerCase();
   const subject = `${title} ${String(description).slice(0, SUBJECT_CHARS).toLowerCase()}`;
@@ -210,7 +216,7 @@ export function themesOf({ name = '', description = '', vendorCode = '' } = {}) 
   for (const tag of TAGS) {
     if (MATCHERS.get(tag.id).test(tag.nameOnly ? title : subject)) themes.push(tag.id);
   }
-  if (String(vendorCode).toLowerCase().endsWith('.jiv')) themes.push(LAYERED.id);
+  if (isLayered({ vendorCode })) themes.push(LAYERED.id);
 
   return themes;
 }

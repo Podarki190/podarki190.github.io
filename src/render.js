@@ -1,10 +1,10 @@
 import {
-  PHONE, TELEGRAM, ORIGINAL_PRICE, SALE_PRICE, SHIPPING_TEXT, ORDER_ENDPOINT,
+  PHONE, TELEGRAM, ORIGINAL_PRICE, SALE_PRICE, LAYERED_PRICE, SHIPPING_TEXT, ORDER_ENDPOINT,
   buildTelLink, buildWhatsAppLink, buildTelegramLink, buildWbLink,
   buildCardWhatsAppMessage, truncate,
 } from './links.js';
 import { PAGES } from './pages.js';
-import { ALL_THEMES, themesOf } from './themes.js';
+import { ALL_THEMES, themesOf, isLayered } from './themes.js';
 
 const SITE_NAME = 'Уникальные настенные часы';
 const SITE_TAGLINE = 'ручная работа мастеров из города Клин';
@@ -51,10 +51,10 @@ export function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
-function renderPriceBlock() {
+function renderPriceBlock(product) {
   return `<div class="price">
       <span class="price-old">${ORIGINAL_PRICE} ₽</span>
-      <span class="price-new">${SALE_PRICE} ₽</span>
+      <span class="price-new">${isLayered(product) ? LAYERED_PRICE : SALE_PRICE} ₽</span>
       <div class="shipping">${SHIPPING_TEXT}</div>
     </div>`;
 }
@@ -79,7 +79,7 @@ function renderCard(product, hrefPrefix = 'tovar/') {
     <a href="${href}"><img src="${escapeHtml(product.photo)}" loading="lazy" alt="${safeName}"></a>
     <h3><a href="${href}">${safeName}</a></h3>
     <p>${escapeHtml(truncate(product.description, 150))}</p>
-    ${renderPriceBlock()}
+    ${renderPriceBlock(product)}
   </article>`;
 }
 
@@ -147,8 +147,8 @@ ${products.map(p => renderCard(p, `${prefix}tovar/`)).join('\n')}
       ? theme.title || `${theme.label}: настенные часы ручной работы, ${products.length} моделей`
       : 'Уникальные настенные часы — ручная работа мастеров из города Клин',
     description: theme
-      ? `${theme.heading || theme.label} — ${products.length} моделей ручной работы из Клина. Цена ${SALE_PRICE} ₽, доставка по всей России бесплатная.`
-      : `${products.length} моделей настенных часов ручной работы из Клина. Цена ${SALE_PRICE} ₽, доставка по всей России бесплатная.`,
+      ? `${theme.heading || theme.label} — ${products.length} моделей ручной работы из Клина. Цена от ${SALE_PRICE} ₽, доставка по всей России бесплатная.`
+      : `${products.length} моделей настенных часов ручной работы из Клина. Цена от ${SALE_PRICE} ₽, доставка по всей России бесплатная.`,
     body,
     prefix,
     scripts: ['search.js'],
@@ -208,7 +208,7 @@ export function renderProductPage(product, version = '', neighbours = {}) {
   ${renderGallery(product)}
   <div class="product-info">
     <h1>${safeName}</h1>
-    ${renderPriceBlock()}
+    ${renderPriceBlock(product)}
     ${renderOrderButtons(product)}
     <form id="order-form" data-name="${safeName}" data-nmid="${product.nmId}">
       <h2>Оформить заказ</h2>

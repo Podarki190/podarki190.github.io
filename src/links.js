@@ -2,6 +2,8 @@ export const PHONE = '+79266642121';
 export const TELEGRAM = 'Podarki190';
 export const ORIGINAL_PRICE = 7000;
 export const SALE_PRICE = 1890;
+// Двухслойные дороже: другая работа, другая цена.
+export const LAYERED_PRICE = 2690;
 export const SHIPPING_TEXT = 'Доставка по всей России Бесплатная';
 
 // Куда уходит заказ с сайта: веб-приложение Apps Script пишет строку в

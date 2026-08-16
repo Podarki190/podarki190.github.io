@@ -105,6 +105,16 @@ test('static pages keep their own title and description', () => {
   }
 });
 
+// Двухслойные стоят дороже, и отличить их можно только по артикулу поставщика.
+test('layered clocks are priced higher, everything else at the base price', () => {
+  const layered = { ...product, vendorCode: 'moto_23.jiv' };
+  assert.match(renderProductPage(layered), /class="price-new">2690 ₽/);
+  assert.match(renderIndexPage([layered]), /class="price-new">2690 ₽/);
+
+  assert.match(renderProductPage(product), /class="price-new">1890 ₽/);
+  assert.match(renderIndexPage([product]), /class="price-new">1890 ₽/);
+});
+
 test('order buttons are colour-coded by channel', () => {
   const page = renderProductPage(product);
   for (const cls of ['btn-call', 'btn-wa', 'btn-tg', 'btn-wb']) assert.match(page, new RegExp(cls));
