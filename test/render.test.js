@@ -125,7 +125,7 @@ test('layered clocks are priced higher, everything else at the base price', () =
 
 test('order buttons are colour-coded by channel', () => {
   const page = renderProductPage(product);
-  for (const cls of ['btn-call', 'btn-wa', 'btn-tg', 'btn-wb']) assert.match(page, new RegExp(cls));
+  for (const cls of ['btn-call', 'btn-wa', 'btn-max', 'btn-tg', 'btn-wb']) assert.match(page, new RegExp(cls));
 });
 
 test('escapeHtml escapes quotes and angle brackets', () => {
@@ -172,6 +172,7 @@ test('renderProductPage shows the full description, not truncated', () => {
 
 test('renderProductPage links back to the catalog and to WB', () => {
   const html = renderProductPage(product);
+  assert.match(html, /https:\/\/max\.ru\/u\//);
   assert.match(html, /href="\.\.\/\.\.\/"/);
   assert.match(html, /https:\/\/www\.wildberries\.ru\/catalog\/1259100136\/detail\.aspx/);
   assert.match(html, /wa\.me\/79266642121/);

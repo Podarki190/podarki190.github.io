@@ -1,6 +1,6 @@
 import {
   PHONE, PHONES, TELEGRAM, ORIGINAL_PRICE, SALE_PRICE, LAYERED_PRICE, SHIPPING_TEXT, ORDER_ENDPOINT,
-  formatPhone, buildTelLink, buildWhatsAppLink, buildTelegramLink, buildWbLink,
+  formatPhone, buildTelLink, buildWhatsAppLink, buildTelegramLink, buildMaxLink, buildWbLink,
   buildCardWhatsAppMessage, truncate,
 } from './links.js';
 import { PAGES } from './pages.js';
@@ -48,6 +48,7 @@ function renderFooter(prefix, current) {
   </nav>
   <p class="footer-contacts">
 ${renderPhones()}
+    <a href="${buildMaxLink()}" target="_blank" rel="noopener">Макс</a>
     <a href="${buildTelegramLink()}" target="_blank" rel="noopener">Telegram @${TELEGRAM}</a>
   </p>
   <p class="footer-note">${SITE_NAME} — ${SITE_TAGLINE}. ${SHIPPING_TEXT}.</p>
@@ -75,10 +76,10 @@ function renderOrderButtons(product) {
   return `<div class="order-buttons">
       <a class="btn btn-call" href="${buildTelLink()}">Позвонить</a>
       <a class="btn btn-wa" href="${escapeHtml(buildWhatsAppLink(waMsg))}" target="_blank" rel="noopener">Написать в WhatsApp</a>
+      <a class="btn btn-max" href="${buildMaxLink()}" target="_blank" rel="noopener">Написать в Макс</a>
       <a class="btn btn-tg" href="${buildTelegramLink()}" target="_blank" rel="noopener">Telegram</a>
       <a class="btn btn-wb" href="${buildWbLink(product.nmId)}" target="_blank" rel="noopener">Купить на WB</a>
-    </div>
-    <p class="messengers-note">Эти же номера работают в Максе — если WhatsApp барахлит, пишите туда.</p>`;
+    </div>`;
 }
 
 // Кнопок заказа на плитке нет намеренно: они есть на странице товара, а на

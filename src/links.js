@@ -9,6 +9,7 @@ export function formatPhone(phone) {
   return `8 (${d.slice(1, 4)}) ${d.slice(4, 7)}-${d.slice(7, 9)}-${d.slice(9, 11)}`;
 }
 export const TELEGRAM = 'Podarki190';
+export const MAX_LINK = 'https://max.ru/u/f9LHodD0cOIwDNpcDynH4_xDC6TdIuhSz9-8MWjGfbh0a3fZCqQ0JKwlGV8';
 export const ORIGINAL_PRICE = 7000;
 export const SALE_PRICE = 1890;
 // Двухслойные дороже: другая работа, другая цена.
@@ -33,6 +34,10 @@ export function buildWhatsAppLink(message) {
 
 export function buildTelegramLink() {
   return `https://t.me/${TELEGRAM}`;
+}
+
+export function buildMaxLink() {
+  return MAX_LINK;
 }
 
 export function buildWbLink(nmId) {

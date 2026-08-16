@@ -71,6 +71,7 @@ a { color: var(--brass-deep); }
 .btn:active { transform: translateY(1px); }
 .btn-call { background: #25D366; }
 .btn-wa { background: #25D366; }
+.btn-max { background: #7C4DFF; }
 .btn-tg { background: #229ED9; }
 .btn-wb { background: #CB11AB; }
 .btn-order { background: var(--pine); font-size: 1.1rem; padding: 0.85rem 1.1rem; }
