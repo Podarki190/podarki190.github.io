@@ -191,7 +191,9 @@ ${page.body}
 // свою страницу — именно они и попадают в поисковую выдачу.
 export function renderServicesIndex(version = '') {
   const cards = SERVICES.map(service => `<a class="service-card" href="${service.slug}/">
-    ${service.photo ? `<img src="../uslugi/${service.photo}" loading="lazy" alt="${escapeHtml(service.nav)}">` : ''}
+    ${service.photo
+      ? `<img src="../uslugi/${service.photo}" loading="lazy" alt="${escapeHtml(service.nav)}">`
+      : '<div class="service-noimg" aria-hidden="true"></div>'}
     <h2>${escapeHtml(service.nav)}</h2>
     <p>${escapeHtml(service.short)}</p>
   </a>`).join('\n  ');
