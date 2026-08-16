@@ -14,7 +14,15 @@ body {
   font-family: system-ui, sans-serif; max-width: 1100px; margin: 0 auto; padding: 1rem;
   color: var(--ink); background: var(--bg);
 }
-h1 { font-size: 1.6rem; }
+h1 { font-size: 1.6rem; text-wrap: balance; }
+/* На узком экране длинный заголовок съедал три строки первого экрана. */
+@media (max-width: 599px) {
+  h1 { font-size: 1.25rem; }
+  body { padding: 0.75rem; }
+  .site-header { gap: 0.35rem 1rem; padding-bottom: 0.7rem; margin-bottom: 0.9rem; }
+  .site-nav { gap: 0.3rem 0.9rem; }
+  .site-nav a { font-size: 0.9rem; }
+}
 /* Браузерное правило [hidden] слабее, чем #order-form { display: flex },
    поэтому отправленная форма оставалась на экране рядом с «Заказ принят». */
 [hidden] { display: none !important; }
@@ -50,6 +58,18 @@ a { color: var(--brass-deep); }
 .chip[aria-current="page"] {
   background: var(--brass); border-style: solid; border-color: var(--brass-deep);
   color: #fff; font-weight: 600;
+}
+
+/* На телефоне три десятка тем занимали весь первый экран, и товаров не было
+   видно вообще. Убираем перенос: темы становятся одной строкой, которую
+   листают пальцем, — привычный приём с маркетплейсов. */
+@media (max-width: 899px) {
+  .chips {
+    flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x proximity;
+    padding-bottom: 0.35rem; scrollbar-width: none; overscroll-behavior-x: contain;
+  }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip { flex: 0 0 auto; scroll-snap-align: start; }
 }
 
 /* ── цена ──────────────────────────────────────────────────── */
