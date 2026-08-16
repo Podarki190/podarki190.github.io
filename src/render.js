@@ -32,11 +32,8 @@ function renderPhones() {
 function renderHeader(prefix, current) {
   return `<header class="site-header">
   <a class="brand" href="${prefix}">
-    <img class="brand-logo" src="${prefix}logo.webp" alt="" width="320" height="320">
-    <span class="brand-text">
-      <span class="brand-name">${SITE_NAME}</span>
-      <span class="brand-tagline">${SITE_TAGLINE}</span>
-    </span>
+    <span class="brand-name">${SITE_NAME}</span>
+    <span class="brand-tagline">${SITE_TAGLINE}</span>
   </a>
   <nav class="site-nav">
       ${renderNav(prefix, current)}

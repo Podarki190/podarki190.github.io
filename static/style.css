@@ -20,7 +20,6 @@ h1 { font-size: 1.6rem; text-wrap: balance; }
   h1 { font-size: 1.25rem; }
   body { padding: 0.75rem; }
   .site-header { gap: 0.35rem 1rem; padding-bottom: 0.7rem; margin-bottom: 0.9rem; }
-  .brand-logo { width: 48px; height: 48px; }
   .site-nav { gap: 0.3rem 0.9rem; }
   .site-nav a { font-size: 0.9rem; }
 }
@@ -153,10 +152,7 @@ a { color: var(--brass-deep); }
   padding-bottom: 0.9rem; margin-bottom: 1.2rem; border-bottom: 2px dashed var(--brass);
 }
 .site-header .site-nav { flex: 1 1 auto; }
-.brand { text-decoration: none; color: inherit; display: flex; align-items: center; gap: 0.6rem; }
-/* Лого — картинка с тем же текстом, что и рядом, поэтому alt пустой. */
-.brand-logo { width: 64px; height: 64px; }
-.brand-text { display: flex; flex-direction: column; }
+.brand { text-decoration: none; color: inherit; display: flex; flex-direction: column; }
 .brand-name { font-size: 1.15rem; font-weight: 700; }
 .brand-tagline { font-size: 0.8rem; color: var(--brass-deep); }
 .site-nav { display: flex; flex-wrap: wrap; gap: 0.4rem 1.1rem; }
