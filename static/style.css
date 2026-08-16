@@ -177,11 +177,13 @@ a { color: var(--brass-deep); }
 .map iframe { display: block; border: 0; }
 
 /* ── услуги ────────────────────────────────────────────────── */
-.services-page { max-width: 1100px; }
+/* .page ниже задаёт 720px и стоит позже в файле, поэтому нужен вес побольше,
+   иначе витрина услуг ужимается до двух колонок. */
+.page.services-page { max-width: 1100px; }
 .services-lead { max-width: 720px; }
 .services-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 1rem; margin-top: 1.5rem;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.2rem; margin-top: 1.5rem;
 }
 .service-card {
   display: flex; flex-direction: column; text-decoration: none; color: inherit;
