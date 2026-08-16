@@ -15,6 +15,9 @@ body {
   color: var(--ink); background: var(--bg);
 }
 h1 { font-size: 1.6rem; }
+/* Браузерное правило [hidden] слабее, чем #order-form { display: flex },
+   поэтому отправленная форма оставалась на экране рядом с «Заказ принят». */
+[hidden] { display: none !important; }
 a { color: var(--brass-deep); }
 
 /* ── каталог ───────────────────────────────────────────────── */

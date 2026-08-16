@@ -34,6 +34,9 @@ function readForm() {
     orderNumber, fio, phone, address,
     product: form.dataset.name,
     nmId: form.dataset.nmid,
+    // Форма стоит на странице товара, так что её собственный адрес и есть
+    // ссылка на заказанные часы — собирать вручную нечего.
+    url: location.origin + location.pathname,
   };
 }
 
