@@ -3,9 +3,13 @@ import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { fetchAllClockProducts } from './wbCatalog.js';
-import { renderIndexPage, renderProductPage, renderStaticPage } from './render.js';
+import {
+  renderIndexPage, renderProductPage, renderStaticPage,
+  renderServicesIndex, renderServicePage,
+} from './render.js';
 import { renderSitemap, renderRobotsTxt } from './sitemap.js';
 import { PAGES } from './pages.js';
+import { SERVICES, SERVICES_INDEX } from './services.js';
 import { ALL_THEMES, themesOf } from './themes.js';
 
 // Короткий отпечаток стилей и скриптов — попадает в адрес файла (?v=…), чтобы
@@ -29,6 +33,7 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
     new URL('./links.js', import.meta.url),
     ...['style.css', 'search.js', 'order-form.js', 'product-nav.js', 'favicon.png']
       .map(a => new URL(`../static/${a}`, import.meta.url)),
+    ...SERVICES.filter(s => s.photo).map(s => new URL(`../static/uslugi/${s.photo}`, import.meta.url)),
   ];
   const version = await assetVersion(assetSources);
 
@@ -40,6 +45,16 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
     const pageDir = path.join(outDir, page.slug);
     await mkdir(pageDir, { recursive: true });
     await writeFile(path.join(pageDir, 'index.html'), renderStaticPage(page, version));
+  }
+
+  // Услуги: витрина и по странице на каждую — их и индексируют поисковики.
+  const servicesDir = path.join(outDir, SERVICES_INDEX.slug);
+  await mkdir(servicesDir, { recursive: true });
+  await writeFile(path.join(servicesDir, 'index.html'), renderServicesIndex(version));
+  for (const service of SERVICES) {
+    const dir = path.join(servicesDir, service.slug);
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(dir, 'index.html'), renderServicePage(service, version));
   }
 
   // У каждой темы свой адрес и своя страница — иначе поисковик её не увидит.
@@ -55,7 +70,12 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
 
   await writeFile(
     path.join(outDir, 'sitemap.xml'),
-    renderSitemap(products, baseUrl, [...PAGES.map(p => p.slug), ...themePages]),
+    renderSitemap(products, baseUrl, [
+      ...PAGES.map(p => p.slug),
+      SERVICES_INDEX.slug,
+      ...SERVICES.map(s => `${SERVICES_INDEX.slug}/${s.slug}`),
+      ...themePages,
+    ]),
   );
 
   for (const [i, product] of products.entries()) {
@@ -71,8 +91,13 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
     );
   }
 
+  await mkdir(path.join(outDir, 'uslugi'), { recursive: true });
   for (const source of assetSources) {
-    await copyFile(source, path.join(outDir, path.basename(source.pathname)));
+    const name = decodeURIComponent(path.basename(source.pathname));
+    const target = source.pathname.includes('/static/uslugi/')
+      ? path.join(outDir, 'uslugi', name)
+      : path.join(outDir, name);
+    await copyFile(source, target);
   }
 
   return products.length;

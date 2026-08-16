@@ -1,9 +1,10 @@
 import {
   PHONE, PHONES, TELEGRAM, ORIGINAL_PRICE, SALE_PRICE, LAYERED_PRICE, SHIPPING_TEXT, ORDER_ENDPOINT,
-  formatPhone, buildTelLink, buildWhatsAppLink, buildTelegramLink, buildMaxLink, buildWbLink,
+  VK_LINK, formatPhone, buildTelLink, buildWhatsAppLink, buildTelegramLink, buildMaxLink, buildWbLink,
   buildCardWhatsAppMessage, truncate,
 } from './links.js';
 import { PAGES } from './pages.js';
+import { SERVICES, SERVICES_INDEX } from './services.js';
 import { ALL_THEMES, themesOf, isLayered } from './themes.js';
 
 const SITE_NAME = 'Уникальные настенные часы';
@@ -14,6 +15,7 @@ function renderNav(prefix, current) {
     `<a href="${href}"${active ? ' aria-current="page"' : ''}>${label}</a>`;
   return [
     item(`${prefix}`, 'Каталог', current === 'index'),
+    item(`${prefix}${SERVICES_INDEX.slug}/`, SERVICES_INDEX.nav, current === SERVICES_INDEX.slug),
     ...PAGES.map(p => item(`${prefix}${p.slug}/`, p.nav, current === p.slug)),
   ].join('\n      ');
 }
@@ -49,6 +51,7 @@ function renderFooter(prefix, current) {
   <p class="footer-contacts">
 ${renderPhones()}
     <a href="${buildMaxLink()}" target="_blank" rel="noopener">Макс</a>
+    <a href="${VK_LINK}" target="_blank" rel="noopener">ВКонтакте</a>
     <a href="${buildTelegramLink()}" target="_blank" rel="noopener">Telegram @${TELEGRAM}</a>
   </p>
   <p class="footer-note">${SITE_NAME} — ${SITE_TAGLINE}. ${SHIPPING_TEXT}.</p>
@@ -170,7 +173,7 @@ ${products.map(p => renderCard(p, `${prefix}tovar/`)).join('\n')}
   });
 }
 
-export function renderStaticPage(page, version = '') {
+export function renderStaticPage(page, version = '', prefix = '../') {
   return pageShell({
     title: page.title,
     description: page.description,
@@ -178,9 +181,50 @@ export function renderStaticPage(page, version = '') {
   <h1>${escapeHtml(page.title)}</h1>
 ${page.body}
 </article>`,
-    prefix: '../',
+    prefix,
     version,
     current: page.slug,
+  });
+}
+
+// Витрина услуг: плитки с фотографией и одной строкой о сути. Каждая ведёт на
+// свою страницу — именно они и попадают в поисковую выдачу.
+export function renderServicesIndex(version = '') {
+  const cards = SERVICES.map(service => `<a class="service-card" href="${service.slug}/">
+    ${service.photo ? `<img src="../uslugi/${service.photo}" loading="lazy" alt="${escapeHtml(service.nav)}">` : ''}
+    <h2>${escapeHtml(service.nav)}</h2>
+    <p>${escapeHtml(service.short)}</p>
+  </a>`).join('\n  ');
+
+  return pageShell({
+    title: SERVICES_INDEX.title,
+    description: SERVICES_INDEX.description,
+    body: `<article class="page services-page">
+  <h1>Лазерная резка и гравировка в Клину</h1>
+  <p class="services-lead">Мастерская «Лазер Клин» на Литейной, 20: режем и гравируем по вашим макетам, изготавливаем печати, награды, упаковку и декор. Всё делается под заказ, поэтому стоимость считается по макету, материалу и тиражу — расскажите задачу, и мы посчитаем.</p>
+  <div class="services-grid">
+  ${cards}
+  </div>
+</article>`,
+    prefix: '../',
+    version,
+    current: SERVICES_INDEX.slug,
+  });
+}
+
+export function renderServicePage(service, version = '') {
+  return pageShell({
+    title: service.title,
+    description: service.description,
+    body: `<article class="page">
+  <h1>${escapeHtml(service.title)}</h1>
+  ${service.photo ? `<img class="service-photo" src="../../uslugi/${service.photo}" alt="${escapeHtml(service.nav)} — мастерская «Лазер Клин» в Клину" loading="lazy">` : ''}
+${service.body}
+  <p class="service-back"><a href="../">← Все услуги мастерской</a></p>
+</article>`,
+    prefix: '../../',
+    version,
+    current: SERVICES_INDEX.slug,
   });
 }
 
