@@ -75,6 +75,7 @@ a { color: var(--brass-deep); }
 .btn-wb { background: #CB11AB; }
 .btn-order { background: var(--pine); font-size: 1.1rem; padding: 0.85rem 1.1rem; }
 .order-alt { margin: 0.2rem 0 0; font-size: 0.85rem; color: var(--ink-muted); }
+.messengers-note { margin: 0.5rem 0 0; font-size: 0.85rem; color: var(--ink-muted); }
 .order-note { font-size: 0.9rem; color: var(--ink-muted); }
 
 /* ── страница товара: телефон ──────────────────────────────── */

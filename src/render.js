@@ -77,7 +77,8 @@ function renderOrderButtons(product) {
       <a class="btn btn-wa" href="${escapeHtml(buildWhatsAppLink(waMsg))}" target="_blank" rel="noopener">Написать в WhatsApp</a>
       <a class="btn btn-tg" href="${buildTelegramLink()}" target="_blank" rel="noopener">Telegram</a>
       <a class="btn btn-wb" href="${buildWbLink(product.nmId)}" target="_blank" rel="noopener">Купить на WB</a>
-    </div>`;
+    </div>
+    <p class="messengers-note">Эти же номера работают в Максе — если WhatsApp барахлит, пишите туда.</p>`;
 }
 
 // Кнопок заказа на плитке нет намеренно: они есть на странице товара, а на
