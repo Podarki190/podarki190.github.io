@@ -4,11 +4,13 @@ export const ORIGINAL_PRICE = 7000;
 export const SALE_PRICE = 1890;
 export const SHIPPING_TEXT = 'Доставка по всей России Бесплатная';
 
-// Куда уходит заказ с сайта. Пока пусто — форма работает по-старому, через
-// мессенджер. Как появится адрес веб-приложения (docs/prijom-zakazov.md),
-// заказ начнёт уходить сам, а покупатель увидит просто «Заказ принят».
-export const ORDER_ENDPOINT = '';
-export const ORDER_SECRET = '';
+// Куда уходит заказ с сайта: веб-приложение Apps Script пишет строку в
+// гугл-таблицу заказов и шлёт уведомление в Telegram. Секрет здесь не пароль
+// от чего-либо, а простой заслон от чужих запросов: он и так виден в коде
+// сайта. Токен бота лежит на стороне Google и сюда не попадает.
+// Настройка и код скрипта — docs/prijom-zakazov.md.
+export const ORDER_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxo905W1Rw6mIJGCe1csVLNjwrz1KlFdWQV6aVVBm_4pgXl9rqzb1HMzyQH_snSNrmY/exec';
+export const ORDER_SECRET = 'fwen1MfDfaEzBpHkT9Fyo_PpRYkaUm8k';
 
 export function buildTelLink() {
   return `tel:${PHONE}`;
