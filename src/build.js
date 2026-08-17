@@ -31,7 +31,10 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
 
   const assetSources = [
     new URL('./links.js', import.meta.url),
-    ...['style.css', 'search.js', 'order-form.js', 'product-nav.js', 'favicon.png']
+    // Файл подтверждения прав в Яндекс.Вебмастере: проверка мета-тегом
+    // отваливалась по таймауту на пятимегабайтной главной, а этот файл — 161 байт.
+    ...['style.css', 'search.js', 'order-form.js', 'product-nav.js', 'favicon.png',
+      'yandex_a0f0a40ea4dbb250.html']
       .map(a => new URL(`../static/${a}`, import.meta.url)),
     ...SERVICES.filter(s => s.photo).map(s => new URL(`../static/uslugi/${s.photo}`, import.meta.url)),
     new URL('../static/uslugi/masterskaya.jpg', import.meta.url),
