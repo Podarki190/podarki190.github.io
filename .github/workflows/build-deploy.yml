@@ -5,7 +5,9 @@ on:
     - cron: '0 3 * * *'
   workflow_dispatch: {}
   push:
-    branches: [master]
+    # master — в старом репозитории, main — в корневом: у новых репозиториев
+    # GitHub делает главной именно main, а Pages пускает только с главной ветки.
+    branches: [master, main]
 
 permissions:
   contents: read
