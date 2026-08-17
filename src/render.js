@@ -137,12 +137,20 @@ ym(${METRIKA_ID},'init',{clickmap:true,trackLinks:true,accurateTrackBounce:true}
 `;
 }
 
-export function renderIndexPage(products, version = '', theme = null) {
+// Сколько карточек показываем на главной. Полный список в 5300 товаров давал
+// страницу на 4,9 МБ: Яндекс.Вебмастер не смог её прочитать и объявил сайт
+// недоступным, а робот при обходе спотыкался бы так же. Каждый товар всё равно
+// попадает в индекс — через карту сайта и страницу своей темы.
+const HOME_LIMIT = 300;
+
+export function renderIndexPage(allProducts, version = '', theme = null) {
+  const products = theme ? allProducts : allProducts.slice(0, HOME_LIMIT);
+  const hidden = allProducts.length - products.length;
   // Чипсы — обычные ссылки, а не кнопки: у каждой темы свой адрес, поэтому
   // поисковик её видит и индексирует. Через решётку (#t=...) тема оставалась
   // невидимой — для поисковика это всё та же главная страница.
   const prefix = theme ? '../../' : '';
-  const present = new Set(products.flatMap(p => themesOf(p)));
+  const present = new Set(allProducts.flatMap(p => themesOf(p)));
   const chips = [{ id: '', label: 'Все часы' }, ...ALL_THEMES]
     .filter(item => !item.id || present.has(item.id) || (theme && item.id === theme.id))
     .map(item => {
@@ -164,6 +172,8 @@ export function renderIndexPage(products, version = '', theme = null) {
     ${chips}
 </div>
 <p id="search-count"></p>
+${hidden > 0 ? `<p class="home-note">Показаны ${products.length} новых моделей из ${allProducts.length}.
+  Остальные — по темам выше: там собран весь каталог.</p>` : ''}
 <div class="grid">
 ${products.map(p => renderCard(p, `${prefix}tovar/`)).join('\n')}
 </div>`;
@@ -174,7 +184,7 @@ ${products.map(p => renderCard(p, `${prefix}tovar/`)).join('\n')}
       : 'Уникальные настенные часы — ручная работа мастеров из города Клин',
     description: theme
       ? `${theme.heading || theme.label} — ${products.length} моделей ручной работы из Клина. Цена от ${SALE_PRICE} ₽, доставка по всей России бесплатная.`
-      : `${products.length} моделей настенных часов ручной работы из Клина. Цена от ${SALE_PRICE} ₽, доставка по всей России бесплатная.`,
+      : `${allProducts.length} моделей настенных часов ручной работы из Клина. Цена от ${SALE_PRICE} ₽, доставка по всей России бесплатная.`,
     body,
     prefix,
     scripts: ['search.js'],

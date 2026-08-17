@@ -85,6 +85,19 @@ test('both phone numbers are clickable in the header and footer', () => {
   }
 });
 
+// Главная на 5300 карточек весила 4,9 МБ, и Вебмастер объявлял сайт
+// недоступным, не сумев её дочитать.
+test('the home page shows a slice, a theme page shows everything given', () => {
+  const many = Array.from({ length: 350 }, (_, i) => ({ ...product, nmId: 1000 + i }));
+  const home = renderIndexPage(many);
+  assert.equal((home.match(/<article class="card"/g) || []).length, 300);
+  assert.match(home, /Показаны 300 новых моделей из 350/);
+
+  const themePage = renderIndexPage(many, '', { id: 'rusrock', label: 'Русский рок' });
+  assert.equal((themePage.match(/<article class="card"/g) || []).length, 350);
+  assert.doesNotMatch(themePage, /Показаны/);
+});
+
 test('every page carries the header and footer navigation', () => {
   for (const [page, prefix] of [
     [renderIndexPage([product]), ''],
