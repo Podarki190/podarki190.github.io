@@ -30,14 +30,16 @@ function filterVisible(q) {
   return shown;
 }
 
+// Отсеиваем по адресу, а не по названию: тёзок в каталоге почти две тысячи,
+// и по названию из выдачи пропадали бы товары, которых на странице нет.
 // Названия приходят из API WB и попадают в разметку: угловые скобки и амперсанд
 // в названии не должны ломать список.
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
 
 async function showRest(q, alreadyShown) {
-  const onPage = new Set([...cards].map(card => card.dataset.name));
+  const onPage = new Set([...cards].map(card => card.dataset.slug));
   const rest = (await loadCatalog())
-    .filter(([, , lower]) => lower.includes(q) && !onPage.has(lower))
+    .filter(([slug, , lower]) => lower.includes(q) && !onPage.has(slug))
     .slice(0, 200);
 
   counter.textContent = `Найдено: ${alreadyShown + rest.length}`;

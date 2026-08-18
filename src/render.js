@@ -95,7 +95,7 @@ function renderOrderButtons(product) {
 function renderCard(product, hrefPrefix = 'tovar/') {
   const safeName = escapeHtml(product.name);
   const href = `${hrefPrefix}${product.slug ?? product.nmId}/`;
-  return `<article class="card" data-name="${escapeHtml(product.name.toLowerCase())}" data-themes="${themesOf(product).join(' ')}">
+  return `<article class="card" data-slug="${product.slug ?? product.nmId}" data-name="${escapeHtml(product.name.toLowerCase())}" data-themes="${themesOf(product).join(' ')}">
     <a href="${href}"><img src="${escapeHtml(product.photo)}" loading="lazy" alt="${safeName}"></a>
     <h3><a href="${href}">${safeName}</a></h3>
     <p>${escapeHtml(truncate(product.description, 150))}</p>
