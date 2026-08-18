@@ -8,8 +8,10 @@ import { PAGES } from './pages.js';
 import { SERVICES, SERVICES_INDEX } from './services.js';
 import { ALL_THEMES, themesOf, isLayered } from './themes.js';
 
-const SITE_NAME = 'Уникальные настенные часы';
-const SITE_TAGLINE = 'ручная работа мастеров из города Клин';
+// Имя мастерской совпадает с доменом lazerklin.ru, карточкой на Яндекс Картах
+// и группой ВК: поисковику проще связать их в один бизнес, когда везде одно имя.
+const SITE_NAME = 'Лазер Клин';
+const SITE_TAGLINE = 'мастерская лазерной резки и гравировки';
 
 function renderNav(prefix, current) {
   const item = (href, label, active) =>
@@ -55,7 +57,8 @@ ${renderPhones()}
     <a href="${VK_LINK}" target="_blank" rel="noopener">ВКонтакте</a>
     <a href="${buildTelegramLink()}" target="_blank" rel="noopener">Telegram @${TELEGRAM}</a>
   </p>
-  <p class="footer-note">${SITE_NAME} — ${SITE_TAGLINE}. ${SHIPPING_TEXT}.</p>
+  <p class="footer-note">${SITE_NAME} — ${SITE_TAGLINE} в городе Клин.
+    Уникальные настенные часы ручной работы мастеров из города Клин. ${SHIPPING_TEXT}.</p>
 </footer>`;
 }
 
