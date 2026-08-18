@@ -31,10 +31,10 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
 
   const assetSources = [
     new URL('./links.js', import.meta.url),
-    // Файл подтверждения прав в Яндекс.Вебмастере: проверка мета-тегом
-    // отваливалась по таймауту на пятимегабайтной главной, а этот файл — 161 байт.
+    // Файл подтверждения прав в Яндекс.Вебмастере — выдаётся под конкретный сайт,
+    // при смене домена Вебмастер выдаёт новый.
     ...['style.css', 'search.js', 'order-form.js', 'product-nav.js', 'favicon.png',
-      'yandex_a0f0a40ea4dbb250.html']
+      'yandex_647c4b8adf060779.html']
       .map(a => new URL(`../static/${a}`, import.meta.url)),
     ...SERVICES.filter(s => s.photo).map(s => new URL(`../static/uslugi/${s.photo}`, import.meta.url)),
     new URL('../static/uslugi/masterskaya.jpg', import.meta.url),
