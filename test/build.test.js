@@ -42,13 +42,14 @@ test('buildSite writes index, one page per product with a photo, sitemap and rob
   assert.doesNotMatch(index, /Часы Б/);
   assert.ok(index.indexOf('Часы В') < index.indexOf('Часы А'), 'новые товары должны быть выше');
 
-  const productPage = await readFile(path.join(outDir, 'tovar', '1', 'index.html'), 'utf8');
+  // адрес страницы — из названия латиницей, а не из номера WB
+  const productPage = await readFile(path.join(outDir, 'tovar', 'chasy-a', 'index.html'), 'utf8');
   assert.match(productPage, /Часы А/);
-  await assert.rejects(() => readFile(path.join(outDir, 'tovar', '2', 'index.html')));
+  await assert.rejects(() => readFile(path.join(outDir, 'tovar', 'chasy-b', 'index.html')));
 
   const sitemap = await readFile(path.join(outDir, 'sitemap.xml'), 'utf8');
-  assert.match(sitemap, /tovar\/1\//);
-  assert.match(sitemap, /tovar\/3\//);
+  assert.match(sitemap, /tovar\/chasy-a\//);
+  assert.match(sitemap, /tovar\/chasy-v\//);
 
   assert.match(await readFile(path.join(outDir, 'robots.txt'), 'utf8'), /Sitemap:/);
 

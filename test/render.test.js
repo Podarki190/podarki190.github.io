@@ -5,6 +5,7 @@ import { PAGES } from '../src/pages.js';
 
 const product = {
   nmId: 1259100136,
+  slug: 'chasy-nastennye-lokomotiv-yaroslavl',
   name: 'Часы настенные "Локомотив Ярославль"',
   description: 'А'.repeat(200),
   photo: 'https://basket-46.wbbasket.ru/x/images/big/1.webp',
@@ -35,14 +36,14 @@ test('renderProductPage falls back to the single photo when photos is missing', 
 
 test('similar products are shown as real tiles linking up one level', () => {
   const similar = [
-    { ...product, nmId: 111, name: 'Соседние часы' },
-    { ...product, nmId: 222, name: 'Другие соседние часы' },
+    { ...product, nmId: 111, name: 'Соседние часы', slug: 'sosedi-1' },
+    { ...product, nmId: 222, name: 'Другие соседние часы', slug: 'sosedi-2' },
   ];
   const page = renderProductPage(product, '', { similar });
   assert.match(page, /<h2>Похожие товары<\/h2>/);
-  assert.match(page, /href="\.\.\/111\/"/);
+  assert.match(page, /href="\.\.\/sosedi-1\/"/);
   assert.match(page, /Соседние часы/);
-  assert.doesNotMatch(page, /href="tovar\/111\/"/); // не корневой путь: мы уже внутри /tovar/
+  assert.doesNotMatch(page, /href="tovar\/sosedi-1\/"/); // не корневой путь: мы уже внутри /tovar/
 });
 
 test('no similar block when there are no neighbours', () => {
@@ -72,7 +73,7 @@ test('a theme page has its own title, heading and relative links', () => {
   const html = renderIndexPage([product], '', theme);
   assert.match(html, /<title>Русский рок: настенные часы[^<]*1 моделей<\/title>/);
   assert.match(html, /<h1>Русский рок — настенные часы<\/h1>/);
-  assert.match(html, /href="\.\.\/\.\.\/tovar\/1259100136\/"/);
+  assert.match(html, /href="\.\.\/\.\.\/tovar\/chasy-nastennye-lokomotiv-yaroslavl\/"/);
   assert.match(html, /<a class="chip" href="\.\.\/\.\.\/tema\/rusrock\/" aria-current="page"/);
   assert.match(html, /href="\.\.\/\.\.\/style\.css"/);
 });
@@ -152,7 +153,7 @@ test('renderIndexPage embeds every product as real HTML text (no JS-only renderi
   assert.match(html, /7000/);
   assert.match(html, /Доставка по всей России Бесплатная/);
   assert.match(html, /loading="lazy"/);
-  assert.match(html, /href="tovar\/1259100136\/"/);
+  assert.match(html, /href="tovar\/chasy-nastennye-lokomotiv-yaroslavl\/"/);
   assert.match(html, /search\.js/);
 });
 

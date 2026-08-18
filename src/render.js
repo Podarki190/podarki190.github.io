@@ -94,7 +94,7 @@ function renderOrderButtons(product) {
 // весили 2,2 МБ). Плитка ведёт на страницу товара, там и заказывают.
 function renderCard(product, hrefPrefix = 'tovar/') {
   const safeName = escapeHtml(product.name);
-  const href = `${hrefPrefix}${product.nmId}/`;
+  const href = `${hrefPrefix}${product.slug ?? product.nmId}/`;
   return `<article class="card" data-name="${escapeHtml(product.name.toLowerCase())}" data-themes="${themesOf(product).join(' ')}">
     <a href="${href}"><img src="${escapeHtml(product.photo)}" loading="lazy" alt="${safeName}"></a>
     <h3><a href="${href}">${safeName}</a></h3>

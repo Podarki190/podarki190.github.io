@@ -13,7 +13,7 @@ async function loadCatalog() {
     const response = await fetch(new URL('catalog.json', import.meta.url));
     const list = response.ok ? await response.json() : [];
     // Нижний регистр считаем один раз при загрузке, а не на каждую букву.
-    catalog = list.map(([id, name]) => [id, name, name.toLowerCase()]);
+    catalog = list.map(([id, name, slug]) => [slug, name, name.toLowerCase()]);
   } catch {
     catalog = [];
   }
@@ -44,8 +44,8 @@ async function showRest(q, alreadyShown) {
   if (rest.length === 0) { globalBox.hidden = true; return; }
 
   globalBox.innerHTML = `<h2>Ещё ${rest.length} из полного каталога</h2>
-    <ul>${rest.map(([id, name]) =>
-      `<li><a href="${new URL(`tovar/${id}/`, import.meta.url)}">${esc(name)}</a></li>`).join('')}</ul>`;
+    <ul>${rest.map(([slug, name]) =>
+      `<li><a href="${new URL(`tovar/${slug}/`, import.meta.url)}">${esc(name)}</a></li>`).join('')}</ul>`;
   globalBox.hidden = false;
 }
 

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Страница не найдена — Лазер Клин</title>
+<link rel="icon" href="/favicon.png">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<main class="page">
+  <h1>Такой страницы нет</h1>
+  <p id="hint">Возможно, товар переехал на новый адрес — проверяем…</p>
+  <p><a href="/">← Вернуться в каталог часов</a> · <a href="/uslugi/">Услуги мастерской</a></p>
+  <p>Не нашли нужное — напишите нам: <a href="tel:+79266642121">8 (926) 664-21-21</a></p>
+</main>
+<script>
+// Адреса товаров раньше были числовыми (/tovar/1430230211/). Ссылки такого вида
+// ещё живут в поиске и в переписке, поэтому уводим человека на новый адрес,
+// а не показываем ему пустую страницу.
+(async () => {
+  const id = (location.pathname.match(/\/tovar\/(\d+)\/?$/) || [])[1];
+  const hint = document.getElementById('hint');
+  if (!id) { hint.textContent = 'Проверьте адрес — возможно, в нём опечатка.'; return; }
+  try {
+    const list = await (await fetch('/catalog.json')).json();
+    const found = list.find(([nmId]) => String(nmId) === id);
+    if (found) { location.replace(`/tovar/${found[2]}/`); return; }
+  } catch {}
+  hint.textContent = 'Этого товара больше нет в каталоге.';
+})();
+</script>
+</body>
+</html>

@@ -5,7 +5,7 @@ export function renderSitemap(products, baseUrl, pageSlugs = []) {
   const urls = [
     `${base}/`,
     ...pageSlugs.map(slug => `${base}/${slug}/`),
-    ...products.map(p => `${base}/tovar/${p.nmId}/`),
+    ...products.map(p => `${base}/tovar/${p.slug ?? p.nmId}/`),
   ];
   const entries = urls.map(u => `  <url><loc>${u}</loc></url>`).join('\n');
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries}\n</urlset>\n`;

@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { fetchAllClockProducts } from './wbCatalog.js';
+import { assignSlugs } from './slug.js';
 import {
   renderIndexPage, renderProductPage, renderStaticPage,
   renderServicesIndex, renderServicePage,
@@ -21,7 +22,7 @@ async function assetVersion(sources) {
 }
 
 export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
-  const products = await fetchAllClockProducts(wbToken, { fetchFn });
+  const products = assignSlugs(await fetchAllClockProducts(wbToken, { fetchFn }));
 
   // Пустой каталог = сломанный API, а не «товары кончились». Лучше упасть и
   // оставить опубликованной предыдущую версию сайта, чем выложить пустую витрину.
@@ -34,7 +35,7 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
     // Файл подтверждения прав в Яндекс.Вебмастере — выдаётся под конкретный сайт,
     // при смене домена Вебмастер выдаёт новый.
     ...['style.css', 'search.js', 'order-form.js', 'product-nav.js', 'favicon.png',
-      'yandex_647c4b8adf060779.html']
+      '404.html', 'yandex_647c4b8adf060779.html']
       .map(a => new URL(`../static/${a}`, import.meta.url)),
     ...SERVICES.filter(s => s.photo).map(s => new URL(`../static/uslugi/${s.photo}`, import.meta.url)),
     new URL('../static/uslugi/masterskaya.jpg', import.meta.url),
@@ -58,7 +59,7 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
   // Качается, лишь когда человек начал печатать в строке поиска.
   await writeFile(
     path.join(outDir, 'catalog.json'),
-    JSON.stringify(products.map(p => [p.nmId, p.name])),
+    JSON.stringify(products.map(p => [p.nmId, p.name, p.slug])),
   );
 
   // Услуги: витрина и по странице на каждую — их и индексируют поисковики.
@@ -93,7 +94,7 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
   );
 
   for (const [i, product] of products.entries()) {
-    const productDir = path.join(outDir, 'tovar', String(product.nmId));
+    const productDir = path.join(outDir, 'tovar', product.slug);
     await mkdir(productDir, { recursive: true });
     await writeFile(
       path.join(productDir, 'index.html'),
