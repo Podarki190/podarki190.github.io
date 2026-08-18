@@ -11,9 +11,9 @@ export function formatPhone(phone) {
 export const TELEGRAM = 'Podarki190';
 // Подтверждение прав на сайт в вебмастерах и счётчик Метрики. Пусто — значит
 // ничего лишнего в страницы не попадает; заполняется после регистрации.
-export const YANDEX_VERIFICATION = 'a0f0a40ea4dbb250';
+export const YANDEX_VERIFICATION = '647c4b8adf060779';
 export const GOOGLE_VERIFICATION = '';
-export const METRIKA_ID = '';
+export const METRIKA_ID = '111720390';
 
 export const VK_LINK = 'https://vk.com/club106929053';
 export const MAX_LINK = 'https://max.ru/u/f9LHodD0cOIwDNpcDynH4_xDC6TdIuhSz9-8MWjGfbh0a3fZCqQ0JKwlGV8';
