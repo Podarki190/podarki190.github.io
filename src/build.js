@@ -51,6 +51,13 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
     await writeFile(path.join(pageDir, 'index.html'), renderStaticPage(page, version));
   }
 
+  // Лёгкий список всего каталога для поиска: только номер и название.
+  // Качается, лишь когда человек начал печатать в строке поиска.
+  await writeFile(
+    path.join(outDir, 'catalog.json'),
+    JSON.stringify(products.map(p => [p.nmId, p.name])),
+  );
+
   // Услуги: витрина и по странице на каждую — их и индексируют поисковики.
   const servicesDir = path.join(outDir, SERVICES_INDEX.slug);
   await mkdir(servicesDir, { recursive: true });

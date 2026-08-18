@@ -179,7 +179,8 @@ ${hidden > 0 ? `<p class="home-note">Показаны ${products.length} нов�
   Остальные — по темам выше: там собран весь каталог.</p>` : ''}
 <div class="grid">
 ${products.map(p => renderCard(p, `${prefix}tovar/`)).join('\n')}
-</div>`;
+</div>
+<section id="global-results" class="global-results" hidden></section>`;
 
   return pageShell({
     title: theme
