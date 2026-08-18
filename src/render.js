@@ -213,10 +213,13 @@ ${page.body}
 
 // Витрина услуг: плитки с фотографией и одной строкой о сути. Каждая ведёт на
 // свою страницу — именно они и попадают в поисковую выдачу.
+const servicePhotoSrc = (service, prefix) =>
+  service.photo.startsWith('http') ? service.photo : `${prefix}uslugi/${service.photo}`;
+
 export function renderServicesIndex(version = '') {
   const cards = SERVICES.map(service => `<a class="service-card" href="${service.slug}/">
     ${service.photo
-      ? `<img src="../uslugi/${service.photo}" loading="lazy" alt="${escapeHtml(service.nav)}">`
+      ? `<img class="${service.photo.startsWith('http') ? 'tall' : ''}" src="${servicePhotoSrc(service, '../')}" loading="lazy" alt="${escapeHtml(service.nav)}">`
       : '<div class="service-noimg" aria-hidden="true"></div>'}
     <h2>${escapeHtml(service.nav)}</h2>
     <p>${escapeHtml(service.short)}</p>
@@ -270,7 +273,7 @@ export function renderServicePage(service, version = '') {
     description: service.description,
     body: `<article class="page">
   <h1>${escapeHtml(service.title)}</h1>
-  ${service.photo ? `<img class="service-photo" src="../../uslugi/${service.photo}" alt="${escapeHtml(service.nav)} — мастерская «Лазер Клин» в Клину" loading="lazy">` : ''}
+  ${service.photo ? `<img class="service-photo${service.photo.startsWith('http') ? ' tall' : ''}" src="${servicePhotoSrc(service, '../../')}" alt="${escapeHtml(service.nav)} — мастерская «Лазер Клин» в Клину" loading="lazy">` : ''}
 ${service.body}
   ${renderRequestForm(service.nav)}
   <p class="service-back"><a href="../">← Все услуги мастерской</a></p>

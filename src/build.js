@@ -37,7 +37,8 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
     ...['style.css', 'search.js', 'order-form.js', 'product-nav.js', 'favicon.png',
       '404.html', 'yandex_647c4b8adf060779.html']
       .map(a => new URL(`../static/${a}`, import.meta.url)),
-    ...SERVICES.filter(s => s.photo).map(s => new URL(`../static/uslugi/${s.photo}`, import.meta.url)),
+    ...SERVICES.filter(s => s.photo && !s.photo.startsWith('http'))
+      .map(s => new URL(`../static/uslugi/${s.photo}`, import.meta.url)),
     new URL('../static/uslugi/masterskaya.jpg', import.meta.url),
   ];
   const version = await assetVersion(assetSources);

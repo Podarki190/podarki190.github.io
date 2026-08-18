@@ -204,6 +204,8 @@ a { color: var(--brass-deep); }
 }
 .service-card:hover { border-color: var(--brass); }
 .service-card img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; }
+.service-card img.tall { object-fit: contain; background: var(--bg); }
+.service-photo.tall { max-width: 420px; }
 /* Пока фотографии нет — ровный кремовый прямоугольник вместо дыры в сетке. */
 .service-noimg {
   aspect-ratio: 4 / 3; background: repeating-linear-gradient(
