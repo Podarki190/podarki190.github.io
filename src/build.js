@@ -44,6 +44,9 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
   await mkdir(outDir, { recursive: true });
   await writeFile(path.join(outDir, 'index.html'), renderIndexPage(products, version));
   await writeFile(path.join(outDir, 'robots.txt'), renderRobotsTxt(baseUrl));
+  // Свой домен. При публикации через свой workflow GitHub не создаёт CNAME сам —
+  // без этого файла каждая выкладка сбрасывала бы домен на *.github.io.
+  await writeFile(path.join(outDir, 'CNAME'), 'lazerklin.ru\n');
 
   for (const page of PAGES) {
     const pageDir = path.join(outDir, page.slug);
