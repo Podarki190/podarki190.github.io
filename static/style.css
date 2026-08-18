@@ -253,3 +253,13 @@ a { color: var(--brass-deep); }
 .global-results ul { columns: 2; column-gap: 2rem; padding-left: 1.1rem; margin: 0.8rem 0 0; }
 .global-results li { margin-bottom: 0.35rem; break-inside: avoid; font-size: 0.92rem; }
 @media (max-width: 699px) { .global-results ul { columns: 1; } }
+
+/* ── заявка на услугу ──────────────────────────────────────── */
+.request {
+  margin: 2.5rem 0 1.5rem; padding: 1.2rem; border: 2px dashed var(--brass);
+  border-radius: 12px; background: var(--surface);
+}
+.request h2 { margin: 0 0 0.5rem; font-size: 1.25rem; }
+.request > p { margin: 0 0 1rem; color: var(--ink-muted); }
+.request .order-buttons { margin: 0 0 1rem; }
+.request #order-form { margin-top: 0; max-width: 460px; }

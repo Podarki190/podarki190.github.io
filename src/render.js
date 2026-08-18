@@ -240,6 +240,30 @@ export function renderServicesIndex(version = '') {
   });
 }
 
+// Заявка на услугу. Механика та же, что у заказа часов (order-form.js), и поля
+// те же — иначе пришлось бы переписывать скрипт приёма на стороне Google.
+// Отличается только смысл: человек не оформляет покупку, а просит расчёт.
+function renderRequestForm(subject) {
+  const safe = escapeHtml(subject);
+  return `<section class="request">
+    <h2>Есть вопрос или нужен расчёт?</h2>
+    <p>Напишите, что нужно сделать, — мы свяжемся с вами, ответим подробно и посчитаем стоимость.</p>
+    <div class="order-buttons">
+      ${PHONES.map(phone => `<a class="btn btn-call" href="${buildTelLink(phone)}">Позвонить ${formatPhone(phone)}</a>`).join('\n      ')}
+    </div>
+    <form id="order-form" data-kind="callback" data-name="${safe}" data-nmid="">
+      <label>Имя <input id="fio" required></label>
+      <label>Телефон <input id="phone" type="tel" required></label>
+      <label>Что нужно сделать <input id="address" required placeholder="материал, размер, тираж, срок"></label>
+      ${ORDER_ENDPOINT ? `<button class="btn btn-order" type="button" id="order-send">Отправить заявку</button>
+      <p class="order-alt">или напишите нам сами:</p>` : ''}
+      <button class="btn btn-wa" type="submit" data-target="whatsapp">Написать в WhatsApp</button>
+      <button class="btn btn-tg" type="submit" data-target="telegram">Написать в Telegram</button>
+    </form>
+    <section id="order-done" class="order-done" hidden></section>
+  </section>`;
+}
+
 export function renderServicePage(service, version = '') {
   return pageShell({
     title: service.title,
@@ -248,9 +272,11 @@ export function renderServicePage(service, version = '') {
   <h1>${escapeHtml(service.title)}</h1>
   ${service.photo ? `<img class="service-photo" src="../../uslugi/${service.photo}" alt="${escapeHtml(service.nav)} — мастерская «Лазер Клин» в Клину" loading="lazy">` : ''}
 ${service.body}
+  ${renderRequestForm(service.nav)}
   <p class="service-back"><a href="../">← Все услуги мастерской</a></p>
 </article>`,
     prefix: '../../',
+    scripts: ['order-form.js'],
     version,
     current: SERVICES_INDEX.slug,
   });

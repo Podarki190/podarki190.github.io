@@ -11,7 +11,7 @@ const MESSENGERS = {
   whatsapp: {
     label: 'WhatsApp',
     open: (message) => window.open(buildWhatsAppLink(message), '_blank'),
-    hint: 'Мы открыли WhatsApp с готовым сообщением — осталось нажать в нём «Отправить».',
+    hint: 'Мы открыли WhatsApp с готовым сообщением — нажмите в нём «Отправить», и мы свяжемся с вами чуть позже.',
   },
   telegram: {
     label: 'Telegram',
@@ -20,9 +20,15 @@ const MESSENGERS = {
       navigator.clipboard?.writeText(message).catch(() => {});
       window.open(buildTelegramLink(), '_blank');
     },
-    hint: 'Мы открыли Telegram, а сообщение скопировали — вставьте его в чат и отправьте.',
+    hint: 'Мы открыли Telegram, а сообщение скопировали — вставьте его в чат и отправьте, и мы свяжемся с вами чуть позже.',
   },
 };
+
+// Одна и та же форма служит двум задачам: заказ часов и заявка на услугу.
+// Поля и отправка общие, различается только текст — иначе пришлось бы держать
+// второй скрипт и второй приёмник заявок.
+const kind = form?.dataset.kind === 'callback' ? 'callback' : 'order';
+const WORD = kind === 'callback' ? 'Заявка' : 'Заказ';
 
 function readForm() {
   const fio = document.getElementById('fio').value.trim();
@@ -31,17 +37,25 @@ function readForm() {
   if (!fio || !phone || !address) return null; // required в полях сам подсветит пустое
   const orderNumber = buildOrderNumber(phone);
   return {
-    orderNumber, fio, phone, address,
+    kind, orderNumber, fio, phone, address,
+    // product — так называет поле скрипт приёма заявок, name — сборщик текста
+    // для мессенджера. Раньше передавалось только первое, и в сообщении,
+    // которое человек отправлял руками, стояло «undefined».
+    name: form.dataset.name,
     product: form.dataset.name,
     nmId: form.dataset.nmid,
-    // Форма стоит на странице товара, так что её собственный адрес и есть
-    // ссылка на заказанные часы — собирать вручную нечего.
+    // Форма стоит на странице товара или услуги, так что её собственный адрес
+    // и есть ссылка на предмет разговора — собирать вручную нечего.
     url: location.origin + location.pathname,
   };
 }
 
 function showAccepted(order) {
-  done.innerHTML = `
+  done.innerHTML = kind === 'callback' ? `
+    <h2>Заявка № ${order.orderNumber} принята</h2>
+    <p>Сообщение отправлено. Свяжемся с вами чуть позже по телефону ${order.phone},
+       ответим подробно и посчитаем стоимость.</p>
+    <p class="order-note">Если удобнее позвонить самим: <a href="tel:${PHONE}">${PHONE}</a>.</p>` : `
     <h2>Заказ № ${order.orderNumber} принят</h2>
     <p>Спасибо! Мы уже получили заявку на «${order.product}».</p>
     <p>Менеджер производства свяжется с вами по телефону ${order.phone},
@@ -53,10 +67,8 @@ function showAccepted(order) {
 
 function showManual(order, messenger, message) {
   done.innerHTML = `
-    <h2>Заказ № ${order.orderNumber} сформирован</h2>
+    <h2>${WORD} № ${order.orderNumber} сформирован${kind === 'callback' ? 'а' : ''}</h2>
     <p>${messenger.hint}</p>
-    <p>Как только сообщение придёт, менеджер производства свяжется с вами,
-       подтвердит заказ и срок изготовления. Спасибо, что выбрали наши часы!</p>
     <div class="order-done-actions">
       <button class="btn btn-tg" type="button" id="order-copy">Скопировать сообщение</button>
       <button class="btn btn-wa" type="button" id="order-again">Открыть ${messenger.label} снова</button>

@@ -66,7 +66,16 @@ export function buildOrderNumber(phone, date = new Date()) {
   return `${tail}-${day}${month}`;
 }
 
-export function buildOrderMessage({ name, nmId, fio, phone, address, orderNumber }) {
+export function buildOrderMessage({ kind, name, nmId, fio, phone, address, orderNumber }) {
+  if (kind === 'callback') {
+    return [
+      `Здравствуйте! Вопрос по услуге «${name}».`,
+      `Заявка № ${orderNumber || buildOrderNumber(phone)}`,
+      `Имя: ${fio}`,
+      `Телефон: ${phone}`,
+      `Вопрос: ${address}`,
+    ].join('\n');
+  }
   return [
     `Здравствуйте! Хочу заказать часы «${name}» (арт. ${nmId}).`,
     `Заказ № ${orderNumber || buildOrderNumber(phone)}`,
