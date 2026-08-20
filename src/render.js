@@ -1,6 +1,6 @@
 import {
   PHONE, PHONES, TELEGRAM, ORIGINAL_PRICE, SALE_PRICE, LAYERED_PRICE, SHIPPING_TEXT, ORDER_ENDPOINT,
-  VK_LINK, METRIKA_ID, YANDEX_VERIFICATION, GOOGLE_VERIFICATION, MUG_PRICE,
+  VK_LINK, METRIKA_ID, YANDEX_VERIFICATION, GOOGLE_VERIFICATION, MUG_PRICE, MUG_ORIGINAL_PRICE,
   formatPhone, buildTelLink, buildWhatsAppLink, buildTelegramLink, buildMaxLink, buildWbLink,
   buildCardWhatsAppMessage, truncate,
 } from './links.js';
@@ -74,6 +74,7 @@ export function escapeHtml(str) {
 function renderPriceBlock(product) {
   if (isMug(product)) {
     return `<div class="price">
+      <span class="price-old">${MUG_ORIGINAL_PRICE} ₽</span>
       <span class="price-new">${MUG_PRICE} ₽</span>
       <div class="shipping">${SHIPPING_TEXT}</div>
     </div>`;

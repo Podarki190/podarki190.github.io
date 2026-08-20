@@ -212,11 +212,12 @@ test('pages never use absolute paths for their own assets', () => {
   assert.match(renderProductPage(product), /href="\.\.\/\.\.\/style\.css"/);
 });
 
-test('a mug is priced at 749 without a struck-through price', () => {
+test('a mug has its own pair of prices, not the clock ones', () => {
   const mug = { ...product, subjectId: 7476, name: 'Кружка "Пандочки"' };
   const page = renderProductPage(mug);
+  assert.match(page, /class="price-old">1500 ₽/);
   assert.match(page, /class="price-new">749 ₽/);
-  assert.doesNotMatch(page, /price-old/);
+  assert.doesNotMatch(page, /7000 ₽/);
 
   assert.match(renderIndexPage([mug]), /class="price-new">749 ₽/);
 });

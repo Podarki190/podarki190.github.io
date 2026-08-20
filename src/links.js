@@ -20,6 +20,8 @@ export const MAX_LINK = 'https://max.ru/u/f9LHodD0cOIwDNpcDynH4_xDC6TdIuhSz9-8MW
 export const ORIGINAL_PRICE = 7000;
 export const SALE_PRICE = 1890;
 // Двухслойные дороже: другая работа, другая цена.
+// У кружки своя пара цен: 7000 ₽ от часов на товаре за 749 выглядели бы обманом.
+export const MUG_ORIGINAL_PRICE = 1500;
 export const MUG_PRICE = 749;
 export const LAYERED_PRICE = 2690;
 export const SHIPPING_TEXT = 'Доставка по всей России Бесплатная';
