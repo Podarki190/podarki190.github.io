@@ -62,7 +62,7 @@ test('index tags every tile with its themes and links to theme pages', () => {
 
 test('chips list only themes actually present in the catalog', () => {
   const html = renderIndexPage([{ ...product, name: 'Часы настенные "Спецназ"' }]);
-  assert.match(html, />Все часы</);
+  assert.match(html, />Весь каталог</);
   assert.doesNotMatch(html, />Авто и мото</);
 });
 

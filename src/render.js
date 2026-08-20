@@ -162,7 +162,7 @@ export function renderIndexPage(allProducts, version = '', theme = null) {
   // невидимой — для поисковика это всё та же главная страница.
   const prefix = theme ? '../../' : '';
   const present = new Set(allProducts.flatMap(p => themesOf(p)));
-  const chips = [{ id: '', label: 'Все часы' }, ...ALL_THEMES]
+  const chips = [{ id: '', label: 'Весь каталог' }, ...ALL_THEMES]
     .filter(item => !item.id || present.has(item.id) || (theme && item.id === theme.id))
     .map(item => {
       const active = theme ? item.id === theme.id : !item.id;
