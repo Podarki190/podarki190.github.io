@@ -3,7 +3,8 @@ import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { fetchAllClockProducts } from './wbCatalog.js';
-import { assignSlugs } from './slug.js';
+import { assignSlugs, } from './slug.js';
+import { isMug } from './wbCatalog.js';
 import {
   renderIndexPage, renderProductPage, renderStaticPage,
   renderServicesIndex, renderServicePage,
@@ -11,7 +12,7 @@ import {
 import { renderSitemap, renderRobotsTxt } from './sitemap.js';
 import { PAGES } from './pages.js';
 import { SERVICES, SERVICES_INDEX } from './services.js';
-import { ALL_THEMES, themesOf } from './themes.js';
+import { ALL_THEMES, themesOf, isLayered } from './themes.js';
 
 // Короткий отпечаток стилей и скриптов — попадает в адрес файла (?v=…), чтобы
 // после правки вёрстки браузер скачал новую версию, а не показывал старую из кэша.
@@ -56,11 +57,19 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
     await writeFile(path.join(pageDir, 'index.html'), renderStaticPage(page, version));
   }
 
-  // Лёгкий список всего каталога для поиска: только номер и название.
-  // Качается, лишь когда человек начал печатать в строке поиска.
+  // Лёгкий список всего каталога для поиска. Качается, лишь когда человек
+  // начал печатать. Адрес фото не храним: он выводится из номера товара, и
+  // непредсказуем в нём только номер сервера WB — его и кладём пятым полем.
+  // Последнее поле — вид товара, от него зависит цена на плитке.
   await writeFile(
     path.join(outDir, 'catalog.json'),
-    JSON.stringify(products.map(p => [p.nmId, p.name, p.slug])),
+    JSON.stringify(products.map(p => [
+      p.nmId,
+      p.name,
+      p.slug,
+      Number((p.photo.match(/basket-(\d+)/) || [])[1] || 0),
+      isMug(p) ? 2 : isLayered(p) ? 1 : 0,
+    ])),
   );
 
   // Услуги: витрина и по странице на каждую — их и индексируют поисковики.

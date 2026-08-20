@@ -1,3 +1,7 @@
+import {
+  ORIGINAL_PRICE, SALE_PRICE, LAYERED_PRICE, MUG_PRICE, MUG_ORIGINAL_PRICE, SHIPPING_TEXT,
+} from './links.js';
+
 const input = document.getElementById('search');
 const cards = document.querySelectorAll('.card');
 const counter = document.getElementById('search-count');
@@ -13,7 +17,8 @@ async function loadCatalog() {
     const response = await fetch(new URL('catalog.json', import.meta.url));
     const list = response.ok ? await response.json() : [];
     // Нижний регистр считаем один раз при загрузке, а не на каждую букву.
-    catalog = list.map(([id, name, slug]) => [slug, name, name.toLowerCase()]);
+    catalog = list.map(([id, name, slug, basket, kind]) => (
+      { id, name, slug, basket, kind, lower: name.toLowerCase() }));
   } catch {
     catalog = [];
   }
@@ -34,20 +39,45 @@ function filterVisible(q) {
 // и по названию из выдачи пропадали бы товары, которых на странице нет.
 // Названия приходят из API WB и попадают в разметку: угловые скобки и амперсанд
 // в названии не должны ломать список.
-const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+
+// Фото лежит по предсказуемому адресу: меняются только номер сервера, том и
+// часть — всё считается из номера товара.
+const photoUrl = ({ id, basket }) =>
+  `https://basket-${basket}.wbbasket.ru/vol${Math.floor(id / 1e5)}/part${Math.floor(id / 1e3)}/${id}/images/big/1.webp`;
+
+const PRICES = [
+  [ORIGINAL_PRICE, SALE_PRICE],       // обычные часы
+  [ORIGINAL_PRICE, LAYERED_PRICE],    // двухслойные
+  [MUG_ORIGINAL_PRICE, MUG_PRICE],    // кружки
+];
+
+function tile(item) {
+  const [was, now] = PRICES[item.kind] || PRICES[0];
+  const href = new URL(`tovar/${item.slug}/`, import.meta.url);
+  const name = esc(item.name);
+  return `<article class="card">
+    <a href="${href}"><img src="${photoUrl(item)}" loading="lazy" alt="${name}"></a>
+    <h3><a href="${href}">${name}</a></h3>
+    <div class="price">
+      <span class="price-old">${was} ₽</span>
+      <span class="price-new">${now} ₽</span>
+      <div class="shipping">${SHIPPING_TEXT}</div>
+    </div>
+  </article>`;
+}
 
 async function showRest(q, alreadyShown) {
   const onPage = new Set([...cards].map(card => card.dataset.slug));
   const rest = (await loadCatalog())
-    .filter(([slug, , lower]) => lower.includes(q) && !onPage.has(slug))
+    .filter(item => item.lower.includes(q) && !onPage.has(item.slug))
     .slice(0, 200);
 
   counter.textContent = `Найдено: ${alreadyShown + rest.length}`;
   if (rest.length === 0) { globalBox.hidden = true; return; }
 
   globalBox.innerHTML = `<h2>Ещё ${rest.length} из полного каталога</h2>
-    <ul>${rest.map(([slug, name]) =>
-      `<li><a href="${new URL(`tovar/${slug}/`, import.meta.url)}">${esc(name)}</a></li>`).join('')}</ul>`;
+    <div class="grid">${rest.map(tile).join('')}</div>`;
   globalBox.hidden = false;
 }
 
@@ -74,7 +104,7 @@ input.addEventListener('input', () => {
 // Запрос дописывается в ссылку в момент клика — чтобы на странице товара
 // работал возврат в эту же подборку. Один обработчик на всю сетку: трогать
 // 5000 ссылок на каждую букву было бы расточительно.
-document.querySelector('.grid').addEventListener('click', (event) => {
+document.addEventListener('click', (event) => {
   const link = event.target.closest('a[href*="tovar/"]');
   if (link && location.hash) link.href = link.getAttribute('href').split('#')[0] + location.hash;
 });
