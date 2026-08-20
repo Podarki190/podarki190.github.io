@@ -20,6 +20,7 @@ export const MAX_LINK = 'https://max.ru/u/f9LHodD0cOIwDNpcDynH4_xDC6TdIuhSz9-8MW
 export const ORIGINAL_PRICE = 7000;
 export const SALE_PRICE = 1890;
 // Двухслойные дороже: другая работа, другая цена.
+export const MUG_PRICE = 749;
 export const LAYERED_PRICE = 2690;
 export const SHIPPING_TEXT = 'Доставка по всей России Бесплатная';
 
@@ -52,7 +53,9 @@ export function buildWbLink(nmId) {
 }
 
 export function buildCardWhatsAppMessage(name, nmId) {
-  return `Здравствуйте! Интересуют часы «${name}» (арт. ${nmId})`;
+  // Нейтрально: в каталоге кроме часов есть кружки, и «интересуют часы»
+  // под кружкой выглядело бы опечаткой.
+  return `Здравствуйте! Интересует товар «${name}» (арт. ${nmId})`;
 }
 
 // Номер заказа — последние 4 цифры телефона и дата. Покупатель узнаёт свой
@@ -77,7 +80,7 @@ export function buildOrderMessage({ kind, name, nmId, fio, phone, address, order
     ].join('\n');
   }
   return [
-    `Здравствуйте! Хочу заказать часы «${name}» (арт. ${nmId}).`,
+    `Здравствуйте! Хочу заказать «${name}» (арт. ${nmId}).`,
     `Заказ № ${orderNumber || buildOrderNumber(phone)}`,
     `ФИО: ${fio}`,
     `Телефон: ${phone}`,

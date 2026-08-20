@@ -1,7 +1,12 @@
 const WB_API_BASE = 'https://content-api.wildberries.ru';
 const CLOCKS_SUBJECT_ID = 625; // «Часы настенные»
+export const MUGS_SUBJECT_ID = 7476; // «Посуда сувенирная» — кружки с печатью
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Кружка отличается от часов только разделом WB — ни в названии, ни в
+// описании этого может не быть. От этого же зависит цена и тема.
+export const isMug = (product) => Number(product?.subjectId) === MUGS_SUBJECT_ID;
 
 /**
  * Полный проход по каталогу — это ~54 запроса за 10 минут, и одного обрыва
@@ -48,7 +53,10 @@ export async function fetchAllClockProducts(token, {
       method: 'POST',
       headers: { Authorization: token, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        settings: { cursor, filter: { withPhoto: 1, objectIDs: [CLOCKS_SUBJECT_ID] } },
+        settings: {
+          cursor,
+          filter: { withPhoto: 1, objectIDs: [CLOCKS_SUBJECT_ID, MUGS_SUBJECT_ID] },
+        },
       }),
       signal: AbortSignal.timeout(120000),
     }, { retries, delayMs: retryDelayMs });
@@ -66,6 +74,7 @@ export async function fetchAllClockProducts(token, {
         description: (card.description || '').trim(),
         photo: photos[0], // для плитки в каталоге — только первое
         photos,           // для страницы товара — все
+        subjectId: card.subjectID,
         createdAt: card.createdAt || '',
       });
     }
@@ -75,6 +84,9 @@ export async function fetchAllClockProducts(token, {
     cursor = { limit: pageSize, updatedAt: last.updatedAt, nmID: last.nmID };
   }
 
-  // Новые сверху, старые партии (винил, .jiv) уезжают в конец каталога.
-  return [...byNmId.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  // Часы сверху, кружки в самом низу каталога: часы — основной товар, а
+  // кружки заходят с поисковых запросов и на витрине не должны их теснить.
+  // Внутри каждой группы новые выше, старые партии (винил, .jiv) уезжают вниз.
+  return [...byNmId.values()].sort((a, b) =>
+    (isMug(a) - isMug(b)) || b.createdAt.localeCompare(a.createdAt));
 }

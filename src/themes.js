@@ -186,9 +186,13 @@ export const TAGS = [
 // не сказано ни слова.
 export const LAYERED = { id: 'layered', label: 'Двухслойные, ручная работа' };
 
+// Кружки живут в каталоге отдельной темой: подставлять их в «Животные» и
+// «Профессии» рядом с часами незачем — это другой товар и другой запрос.
+export const MUGS = { id: 'kruzhki', label: 'Кружки с печатью' };
+
 export const OTHER_THEME = { id: 'prochee', label: 'Разное' };
 
-export const ALL_THEMES = [...SUBJECTS, ...TAGS, LAYERED, OTHER_THEME];
+export const ALL_THEMES = [...SUBJECTS, ...TAGS, LAYERED, MUGS, OTHER_THEME];
 
 const SUBJECT_CHARS = 300;
 
@@ -201,7 +205,8 @@ export function isLayered(product) {
   return String(product?.vendorCode || '').toLowerCase().endsWith('.jiv');
 }
 
-export function themesOf({ name = '', description = '', vendorCode = '' } = {}) {
+export function themesOf({ name = '', description = '', vendorCode = '', subjectId } = {}) {
+  if (Number(subjectId) === 7476) return [MUGS.id];
   const title = String(name).toLowerCase();
   const subject = `${title} ${String(description).slice(0, SUBJECT_CHARS).toLowerCase()}`;
 

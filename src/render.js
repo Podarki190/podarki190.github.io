@@ -1,12 +1,13 @@
 import {
   PHONE, PHONES, TELEGRAM, ORIGINAL_PRICE, SALE_PRICE, LAYERED_PRICE, SHIPPING_TEXT, ORDER_ENDPOINT,
-  VK_LINK, METRIKA_ID, YANDEX_VERIFICATION, GOOGLE_VERIFICATION,
+  VK_LINK, METRIKA_ID, YANDEX_VERIFICATION, GOOGLE_VERIFICATION, MUG_PRICE,
   formatPhone, buildTelLink, buildWhatsAppLink, buildTelegramLink, buildMaxLink, buildWbLink,
   buildCardWhatsAppMessage, truncate,
 } from './links.js';
 import { PAGES } from './pages.js';
 import { SERVICES, SERVICES_INDEX } from './services.js';
 import { ALL_THEMES, themesOf, isLayered } from './themes.js';
+import { isMug } from './wbCatalog.js';
 
 // Имя мастерской совпадает с доменом lazerklin.ru, карточкой на Яндекс Картах
 // и группой ВК: поисковику проще связать их в один бизнес, когда везде одно имя.
@@ -71,6 +72,12 @@ export function escapeHtml(str) {
 }
 
 function renderPriceBlock(product) {
+  if (isMug(product)) {
+    return `<div class="price">
+      <span class="price-new">${MUG_PRICE} ₽</span>
+      <div class="shipping">${SHIPPING_TEXT}</div>
+    </div>`;
+  }
   return `<div class="price">
       <span class="price-old">${ORIGINAL_PRICE} ₽</span>
       <span class="price-new">${isLayered(product) ? LAYERED_PRICE : SALE_PRICE} ₽</span>

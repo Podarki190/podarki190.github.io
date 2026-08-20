@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { fetchAllClockProducts } from '../src/wbCatalog.js';
+import { fetchAllClockProducts, isMug, MUGS_SUBJECT_ID } from '../src/wbCatalog.js';
 
 const card = (nmID, extra = {}) => ({
   nmID,
@@ -22,6 +22,7 @@ test('fetchAllClockProducts returns name, description and photo for every card',
     description: 'Описание 1',
     photo: 'https://basket-46.wbbasket.ru/1/images/big/1.webp',
     photos: ['https://basket-46.wbbasket.ru/1/images/big/1.webp'],
+    subjectId: undefined,
     createdAt: '2026-08-01T00:00:00Z',
   }]);
 });
@@ -54,12 +55,12 @@ test('fetchAllClockProducts puts the newest products first', async () => {
   assert.deepEqual(products.map(p => p.nmId), [2, 3, 1]);
 });
 
-test('fetchAllClockProducts asks WB only for wall clocks that have photos', async () => {
+test('fetchAllClockProducts asks WB for clocks and mugs that have photos', async () => {
   const fetchFn = async (url, opts) => {
     assert.equal(url, 'https://content-api.wildberries.ru/content/v2/get/cards/list');
     assert.equal(opts.headers.Authorization, 't');
     const body = JSON.parse(opts.body);
-    assert.deepEqual(body.settings.filter, { withPhoto: 1, objectIDs: [625] });
+    assert.deepEqual(body.settings.filter, { withPhoto: 1, objectIDs: [625, 7476] });
     assert.equal(body.settings.cursor.limit, 100);
     return new Response(JSON.stringify({ cards: [] }), { status: 200 });
   };
@@ -145,4 +146,22 @@ test('fetchAllClockProducts retries a rate limit and then succeeds', async () =>
   };
   const products = await fetchAllClockProducts('t', { fetchFn, retryDelayMs: 0 });
   assert.equal(products.length, 1);
+});
+
+// Кружки заходят на сайт с поисковых запросов, но витрину занимать не должны:
+// каталог — прежде всего про часы.
+test('mugs sink to the bottom of the catalog, no matter how new they are', async () => {
+  const fetchFn = async () => new Response(JSON.stringify({
+    cards: [
+      card(1, { subjectID: MUGS_SUBJECT_ID, createdAt: '2026-08-20T00:00:00Z' }),
+      card(2, { subjectID: 625, createdAt: '2026-07-01T00:00:00Z' }),
+      card(3, { subjectID: MUGS_SUBJECT_ID, createdAt: '2026-08-19T00:00:00Z' }),
+      card(4, { subjectID: 625, createdAt: '2026-08-10T00:00:00Z' }),
+    ],
+  }), { status: 200 });
+
+  const products = await fetchAllClockProducts('t', { fetchFn });
+  assert.deepEqual(products.map(p => p.nmId), [4, 2, 1, 3]);
+  assert.equal(isMug(products[0]), false);
+  assert.equal(isMug(products[2]), true);
 });

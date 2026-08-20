@@ -211,3 +211,17 @@ test('pages never use absolute paths for their own assets', () => {
   assert.match(renderIndexPage([product]), /href="style\.css"/);
   assert.match(renderProductPage(product), /href="\.\.\/\.\.\/style\.css"/);
 });
+
+test('a mug is priced at 749 without a struck-through price', () => {
+  const mug = { ...product, subjectId: 7476, name: 'Кружка "Пандочки"' };
+  const page = renderProductPage(mug);
+  assert.match(page, /class="price-new">749 ₽/);
+  assert.doesNotMatch(page, /price-old/);
+
+  assert.match(renderIndexPage([mug]), /class="price-new">749 ₽/);
+});
+
+test('a mug lands in its own theme, not in the clock ones', () => {
+  const mug = { ...product, subjectId: 7476, name: 'Кружка "Лучшей медсестре"' };
+  assert.match(renderIndexPage([mug]), /data-themes="kruzhki"/);
+});
