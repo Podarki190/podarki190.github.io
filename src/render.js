@@ -35,8 +35,16 @@ function renderPhones() {
 function renderHeader(prefix, current) {
   return `<header class="site-header">
   <a class="brand" href="${prefix}">
-    <span class="brand-name">${SITE_NAME}</span>
-    <span class="brand-tagline">${SITE_TAGLINE}</span>
+    <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+      <circle cx="24" cy="24" r="19" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-dasharray="4 4" opacity=".55"/>
+      <path d="M41 7 26.6 21.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
+      <circle cx="24" cy="24" r="3.4" fill="currentColor"/>
+    </svg>
+    <span class="brand-text">
+      <span class="brand-name">${SITE_NAME}</span>
+      <span class="brand-tagline">${SITE_TAGLINE}</span>
+    </span>
   </a>
   <nav class="site-nav">
       ${renderNav(prefix, current)}
