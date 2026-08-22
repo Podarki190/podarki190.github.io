@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { renderIndexPage, renderProductPage, renderStaticPage, escapeHtml } from '../src/render.js';
-import { PAGES } from '../src/pages.js';
+import { PAGES, captionFromFile } from '../src/pages.js';
 
 const product = {
   nmId: 1259100136,
@@ -225,4 +225,29 @@ test('a mug has its own pair of prices, not the clock ones', () => {
 test('a mug lands in its own theme, not in the clock ones', () => {
   const mug = { ...product, subjectId: 7476, name: 'Кружка "Лучшей медсестре"' };
   assert.match(renderIndexPage([mug]), /data-themes="kruzhki"/);
+});
+
+// Значки соцсетей берутся из общего спрайта, а не встраиваются в каждую
+// страницу: инлайном четыре логотипа стоили бы 14 МБ на 7000 страниц.
+test('the footer links to the VK group with an icon from the shared sprite', () => {
+  const html = renderStaticPage(PAGES[0], 'abc123');
+  assert.match(html, /href="https:\/\/vk\.com\/gravirovka_v_klinu"/);
+  assert.match(html, /<use href="\.\.\/icons\.svg\?v=abc123#vk">/);
+  assert.ok(!html.includes('M13.162 18.994'), 'логотип ВК не должен попадать в разметку страницы');
+});
+
+// В верхнем меню восемь пунктов не помещаются: правовая информация живёт
+// только в подвале — но живёт, иначе на неё не попасть.
+test('footer-only pages are kept out of the header navigation', () => {
+  const legal = PAGES.find(p => p.footerOnly);
+  const html = renderStaticPage(PAGES[0], '');
+  const header = html.slice(html.indexOf('<header'), html.indexOf('</header>'));
+  assert.ok(!header.includes(legal.slug), 'правовая информация не должна быть в шапке');
+  assert.ok(html.slice(html.indexOf('<footer')).includes(legal.slug), 'в подвале она нужна');
+});
+
+test('a works photo caption comes from the file name, without the sort prefix', () => {
+  assert.equal(captionFromFile('12 Медальница для гимнастки.jpg'), 'Медальница для гимнастки');
+  assert.equal(captionFromFile('Часы-из-дуба.JPEG'), 'Часы из дуба');
+  assert.equal(captionFromFile('kubok.webp'), 'kubok');
 });

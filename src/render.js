@@ -1,8 +1,8 @@
 import {
-  PHONE, PHONES, TELEGRAM, ORIGINAL_PRICE, SALE_PRICE, LAYERED_PRICE, SHIPPING_TEXT, ORDER_ENDPOINT,
-  VK_LINK, METRIKA_ID, YANDEX_VERIFICATION, GOOGLE_VERIFICATION, MUG_PRICE, MUG_ORIGINAL_PRICE,
+  PHONE, PHONES, ORIGINAL_PRICE, SALE_PRICE, LAYERED_PRICE, SHIPPING_TEXT, ORDER_ENDPOINT,
+  METRIKA_ID, YANDEX_VERIFICATION, GOOGLE_VERIFICATION, MUG_PRICE, MUG_ORIGINAL_PRICE,
   formatPhone, buildTelLink, buildWhatsAppLink, buildTelegramLink, buildMaxLink, buildWbLink,
-  buildCardWhatsAppMessage, truncate,
+  buildCardWhatsAppMessage, truncate, renderSocials,
 } from './links.js';
 import { PAGES } from './pages.js';
 import { SERVICES, SERVICES_INDEX } from './services.js';
@@ -14,13 +14,14 @@ import { isMug } from './wbCatalog.js';
 const SITE_NAME = 'Лазер Клин';
 const SITE_TAGLINE = 'мастерская лазерной резки и гравировки';
 
-function renderNav(prefix, current) {
+function renderNav(prefix, current, { all = false } = {}) {
   const item = (href, label, active) =>
     `<a href="${href}"${active ? ' aria-current="page"' : ''}>${label}</a>`;
   return [
     item(`${prefix}`, 'Каталог', current === 'index'),
     item(`${prefix}${SERVICES_INDEX.slug}/`, SERVICES_INDEX.nav, current === SERVICES_INDEX.slug),
-    ...PAGES.map(p => item(`${prefix}${p.slug}/`, p.nav, current === p.slug)),
+    ...PAGES.filter(p => all || !p.footerOnly)
+      .map(p => item(`${prefix}${p.slug}/`, p.nav, current === p.slug)),
   ].join('\n      ');
 }
 
@@ -55,17 +56,15 @@ ${renderPhones()}
 </header>`;
 }
 
-function renderFooter(prefix, current) {
+function renderFooter(prefix, current, v = '') {
   return `<footer class="site-footer">
   <nav class="site-nav">
-      ${renderNav(prefix, current)}
+      ${renderNav(prefix, current, { all: true })}
   </nav>
   <p class="footer-contacts">
 ${renderPhones()}
-    <a href="${buildMaxLink()}" target="_blank" rel="noopener">Макс</a>
-    <a href="${VK_LINK}" target="_blank" rel="noopener">ВКонтакте</a>
-    <a href="${buildTelegramLink()}" target="_blank" rel="noopener">Telegram @${TELEGRAM}</a>
   </p>
+  ${renderSocials({ prefix, v })}
   <p class="footer-note">${SITE_NAME} — ${SITE_TAGLINE} в городе Клин.
     Уникальные настенные часы ручной работы мастеров из города Клин. ${SHIPPING_TEXT}.</p>
 </footer>`;
@@ -142,7 +141,7 @@ ${renderHeader(prefix, current)}
 <main>
 ${body}
 </main>
-${renderFooter(prefix, current)}
+${renderFooter(prefix, current, v)}
 ${scripts.map(s => `<script type="module" src="${prefix}${s}${v}"></script>`).join('\n')}${METRIKA_ID ? `
 <script>
 (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
@@ -217,7 +216,7 @@ export function renderStaticPage(page, version = '', prefix = '../') {
   return pageShell({
     title: page.title,
     description: page.description,
-    body: `<article class="page">
+    body: `<article class="page${page.cssClass ? ` ${page.cssClass}` : ''}">
   <h1>${escapeHtml(page.title)}</h1>
 ${page.body}
 </article>`,

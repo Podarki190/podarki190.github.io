@@ -287,3 +287,47 @@ a { color: var(--brass-deep); }
 .request > p { margin: 0 0 1rem; color: var(--ink-muted); }
 .request .order-buttons { margin: 0 0 1rem; }
 .request #order-form { margin-top: 0; max-width: 460px; }
+
+/* ── соцсети ───────────────────────────────────────────────── */
+/* Значки подтягиваются из общего спрайта icons.svg по ссылке: внутрь символа
+   каскад CSS не проходит, поэтому цвет задаётся через currentColor на ссылке. */
+.socials { display: flex; flex-wrap: wrap; gap: 0.5rem; list-style: none; padding: 0; margin: 0.7rem 0 0; }
+.social {
+  display: inline-flex; align-items: center; gap: 0.45rem; text-decoration: none;
+  padding: 0.4rem 0.85rem; border-radius: 999px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink-muted); font-size: 0.9rem; line-height: 1.2;
+}
+.social:hover { border-color: var(--brass); color: var(--ink); background: #fff; }
+.social-icon { width: 20px; height: 20px; flex: 0 0 auto; }
+/* Фирменные цвета: значок узнают боковым зрением, подпись читать не нужно. */
+.social-vk .social-icon { color: #0077FF; }
+.social-tg .social-icon { color: #2AABEE; }
+.social-wa .social-icon { color: #25D366; }
+.social-max .social-icon { color: var(--brass); }
+.social-text { display: flex; flex-direction: column; }
+.social-text small { font-size: 0.78rem; opacity: .75; }
+.socials-wide { gap: 0.6rem; margin: 0.8rem 0 1rem; }
+.socials-wide .social { padding: 0.6rem 1rem; font-size: 0.95rem; font-weight: 600; color: var(--ink); }
+.socials-wide .social-icon { width: 26px; height: 26px; }
+
+/* ── видео и фото работ ────────────────────────────────────── */
+.page.works-page { max-width: 1100px; }
+.video-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 1.2rem; margin: 1.2rem 0 2rem;
+}
+.video-item { margin: 0; }
+.video-item .video { margin: 0; }
+.video-item figcaption { font-size: 0.9rem; color: var(--ink-muted); margin-top: 0.4rem; }
+.works-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem; margin: 1.2rem 0 2rem;
+}
+.works-grid figure { margin: 0; }
+/* Кадр задан заранее: фотографии приходят разного размера, и без этого
+   страница прыгала бы при каждой догруженной картинке. */
+.works-grid img {
+  display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover;
+  border-radius: 10px; background: var(--surface); border: 1px solid var(--line);
+}
+.works-grid figcaption { font-size: 0.85rem; color: var(--ink-muted); margin-top: 0.4rem; }

@@ -10,7 +10,7 @@ import {
   renderServicesIndex, renderServicePage,
 } from './render.js';
 import { renderSitemap, renderRobotsTxt } from './sitemap.js';
-import { PAGES } from './pages.js';
+import { PAGES, WORKS_PHOTOS } from './pages.js';
 import { SERVICES, SERVICES_INDEX } from './services.js';
 import { ALL_THEMES, themesOf, isLayered } from './themes.js';
 
@@ -36,8 +36,9 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
     // Файл подтверждения прав в Яндекс.Вебмастере — выдаётся под конкретный сайт,
     // при смене домена Вебмастер выдаёт новый.
     ...['style.css', 'search.js', 'order-form.js', 'product-nav.js', 'favicon.png',
-      '404.html', 'yandex_647c4b8adf060779.html']
+      'icons.svg', '404.html', 'yandex_647c4b8adf060779.html']
       .map(a => new URL(`../static/${a}`, import.meta.url)),
+    ...WORKS_PHOTOS.map(f => new URL(`../static/raboty/${encodeURIComponent(f)}`, import.meta.url)),
     ...SERVICES.filter(s => s.photo && !s.photo.startsWith('http'))
       .map(s => new URL(`../static/uslugi/${s.photo}`, import.meta.url)),
     new URL('../static/uslugi/masterskaya.jpg', import.meta.url),
@@ -117,12 +118,11 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
   }
 
   await mkdir(path.join(outDir, 'uslugi'), { recursive: true });
+  if (WORKS_PHOTOS.length) await mkdir(path.join(outDir, 'raboty'), { recursive: true });
   for (const source of assetSources) {
     const name = decodeURIComponent(path.basename(source.pathname));
-    const target = source.pathname.includes('/static/uslugi/')
-      ? path.join(outDir, 'uslugi', name)
-      : path.join(outDir, name);
-    await copyFile(source, target);
+    const subdir = ['uslugi', 'raboty'].find(d => source.pathname.includes(`/static/${d}/`));
+    await copyFile(source, subdir ? path.join(outDir, subdir, name) : path.join(outDir, name));
   }
 
   return products.length;

@@ -15,7 +15,10 @@ export const YANDEX_VERIFICATION = '647c4b8adf060779';
 export const GOOGLE_VERIFICATION = '';
 export const METRIKA_ID = '111720390';
 
-export const VK_LINK = 'https://vk.com/club106929053';
+// Короткий адрес группы вместо club106929053: он читается человеком, его не
+// стыдно продиктовать по телефону, и ведёт он в ту же группу 106929053.
+export const VK_LINK = 'https://vk.com/gravirovka_v_klinu';
+export const VK_GROUP_ID = 106929053;  // отсюда встраиваются видео из группы
 export const MAX_LINK = 'https://max.ru/u/f9LHodD0cOIwDNpcDynH4_xDC6TdIuhSz9-8MWjGfbh0a3fZCqQ0JKwlGV8';
 export const ORIGINAL_PRICE = 7000;
 export const SALE_PRICE = 1890;
@@ -95,4 +98,27 @@ export function truncate(text, maxLen) {
   const cut = text.slice(0, maxLen);
   const lastSpace = cut.lastIndexOf(' ');
   return (lastSpace > 0 ? cut.slice(0, lastSpace) : cut) + '…';
+}
+
+
+// Соцсети и мессенджеры одним списком: в подвале и в контактах он должен быть
+// один и тот же, иначе где-нибудь потеряется очередная ссылка.
+export const SOCIALS = [
+  { id: 'vk', label: 'ВКонтакте', note: 'работы, статьи и живые отзывы', href: VK_LINK },
+  { id: 'tg', label: 'Telegram', note: `@${TELEGRAM}`, href: `https://t.me/${TELEGRAM}` },
+  { id: 'wa', label: 'WhatsApp', note: formatPhone(PHONE), href: `https://wa.me/${PHONE.replace('+', '')}` },
+  { id: 'max', label: 'Макс', note: formatPhone(PHONE), href: MAX_LINK },
+];
+
+// Значки берутся из общего спрайта icons.svg — по ссылке, а не инлайном:
+// на 7000 страницах четыре встроенных логотипа весили бы 14 МБ.
+// prefix — путь до корня сайта, withNote — подпись под названием (контакты).
+export function renderSocials({ prefix = '../', v = '', withNote = false } = {}) {
+  const items = SOCIALS.map(s => `<li><a class="social social-${s.id}" href="${s.href}" target="_blank" rel="noopener">
+    <svg class="social-icon" aria-hidden="true"><use href="${prefix}icons.svg${v}#${s.id}"></use></svg>
+    <span class="social-text">${s.label}${withNote ? `<small>${s.note}</small>` : ''}</span>
+  </a></li>`).join('\n  ');
+  return `<ul class="socials${withNote ? ' socials-wide' : ''}">
+  ${items}
+</ul>`;
 }
