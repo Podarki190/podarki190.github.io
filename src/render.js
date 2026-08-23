@@ -5,6 +5,7 @@ import {
   buildCardWhatsAppMessage, truncate, renderSocials,
 } from './links.js';
 import { PAGES } from './pages.js';
+import { BLOG_INDEX, publishedPosts } from './blog.js';
 import { SERVICES, SERVICES_INDEX, SERVICE_GROUPS } from './services.js';
 import { ALL_THEMES, themesOf, isLayered } from './themes.js';
 import { isMug } from './wbCatalog.js';
@@ -20,6 +21,7 @@ function renderNav(prefix, current, { all = false } = {}) {
   return [
     item(`${prefix}`, 'Каталог', current === 'index'),
     item(`${prefix}${SERVICES_INDEX.slug}/`, SERVICES_INDEX.nav, current === SERVICES_INDEX.slug),
+    item(`${prefix}${BLOG_INDEX.slug}/`, BLOG_INDEX.nav, current === BLOG_INDEX.slug),
     ...PAGES.filter(p => all || !p.footerOnly)
       .map(p => item(`${prefix}${p.slug}/`, p.nav, current === p.slug)),
   ].join('\n      ');
@@ -317,6 +319,84 @@ ${service.body}
     scripts: ['order-form.js'],
     version,
     current: SERVICES_INDEX.slug,
+  });
+}
+
+const MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+  'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+
+// Дата в посте — не для красоты: по ней видно, что мастерская живая, а не
+// брошена три года назад. Разбираем строку сами, без Date: '2026-08-24' в
+// конструкторе Date считается UTC и в минусовых поясах съезжает на день назад.
+function formatPostDate(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return `${d} ${MONTHS[m - 1]} ${y}`;
+}
+
+function renderPostPhoto(post, i, prefix = '') {
+  return `<img class="service-photo" src="${prefix}${post.photos ? post.photos[i] : `${i + 1}.jpg`}"
+    alt="${escapeHtml(post.alts[i])}"${i ? ' loading="lazy"' : ''}>`;
+}
+
+// Ссылки на услуги — половина смысла блога. Статья приводит человека из поиска
+// по частному запросу, а отсюда он попадает на страницу, где заказывают.
+function renderPostServices(post) {
+  const bySlug = new Map(SERVICES.map(s => [s.slug, s]));
+  const items = (post.services ?? []).map(slug => bySlug.get(slug)).filter(Boolean);
+  if (!items.length) return '';
+  const links = items
+    .map(s => `<a href="../../${SERVICES_INDEX.slug}/${s.slug}/">${escapeHtml(s.nav)}</a>`)
+    .join(' · ');
+  return `<p class="post-services">Смотрите также: ${links}</p>`;
+}
+
+export function renderBlogIndex(version = '', now = new Date()) {
+  const posts = publishedPosts(now);
+  const card = (post) => `<a class="service-card" href="${post.slug}/">
+    <img src="${post.slug}/1.jpg" loading="lazy" alt="${escapeHtml(post.alts[0])}">
+    <h3>${escapeHtml(post.h1)}</h3>
+    <p>${escapeHtml(truncate(post.description, 150))}</p>
+  </a>`;
+
+  const body = posts.length
+    ? `<div class="services-grid">
+  ${posts.map(card).join('\n  ')}
+  </div>`
+    : '<p>Первые записи появятся со дня на день.</p>';
+
+  return pageShell({
+    title: BLOG_INDEX.title,
+    description: BLOG_INDEX.description,
+    body: `<article class="page services-page">
+  <h1>Блог мастерской</h1>
+  <p class="services-lead">Что у нас заказывают и как мы это делаем: из какого материала, сколько занимает, на что смотреть при выборе. Пишем по своим работам — то, что снято в мастерской и у заказчиков.</p>
+  ${body}
+</article>`,
+    prefix: '../',
+    version,
+    current: BLOG_INDEX.slug,
+  });
+}
+
+export function renderBlogPost(post, version = '') {
+  return pageShell({
+    title: post.title,
+    description: post.description,
+    body: `<article class="page blog-post">
+  <h1>${escapeHtml(post.h1)}</h1>
+  <p class="post-date">${formatPostDate(post.date)}</p>
+  ${renderPostPhoto(post, 0)}
+${post.body}
+  ${renderPostPhoto(post, 1)}
+  ${renderPostPhoto(post, 2)}
+  ${renderPostServices(post)}
+  ${renderRequestForm(post.h1)}
+  <p class="service-back"><a href="../">← Все записи блога</a></p>
+</article>`,
+    prefix: '../../',
+    scripts: ['order-form.js'],
+    version,
+    current: BLOG_INDEX.slug,
   });
 }
 

@@ -7,10 +7,11 @@ import { assignSlugs, } from './slug.js';
 import { isMug } from './wbCatalog.js';
 import {
   renderIndexPage, renderProductPage, renderStaticPage,
-  renderServicesIndex, renderServicePage,
+  renderServicesIndex, renderServicePage, renderBlogIndex, renderBlogPost,
 } from './render.js';
 import { renderSitemap, renderRobotsTxt } from './sitemap.js';
 import { PAGES, WORKS_PHOTOS } from './pages.js';
+import { BLOG_INDEX, publishedPosts } from './blog.js';
 import { SERVICES, SERVICES_INDEX } from './services.js';
 import { ALL_THEMES, themesOf, isLayered } from './themes.js';
 
@@ -85,6 +86,28 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
     await writeFile(path.join(dir, 'index.html'), renderServicePage(service, version));
   }
 
+  // Блог: витрина и страница на каждую запись. Дата берётся один раз на всю
+  // сборку — иначе сборка, начатая до полуночи и закончившаяся после, положила
+  // бы в витрину один набор записей, а в карту сайта другой.
+  // Фотографии лежат рядом со своей страницей, в blog/<slug>/: адрес картинки
+  // тогда не зависит от версии ассетов и не ломается при перевыкладке.
+  const now = new Date();
+  const posts = publishedPosts(now);
+  const blogDir = path.join(outDir, BLOG_INDEX.slug);
+  await mkdir(blogDir, { recursive: true });
+  await writeFile(path.join(blogDir, 'index.html'), renderBlogIndex(version, now));
+  for (const post of posts) {
+    const postDir = path.join(blogDir, post.slug);
+    await mkdir(postDir, { recursive: true });
+    await writeFile(path.join(postDir, 'index.html'), renderBlogPost(post, version));
+    for (let i = 1; i <= post.alts.length; i += 1) {
+      await copyFile(
+        new URL(`../static/blog/${post.slug}/${i}.jpg`, import.meta.url),
+        path.join(postDir, `${i}.jpg`),
+      );
+    }
+  }
+
   // У каждой темы свой адрес и своя страница — иначе поисковик её не увидит.
   const themePages = [];
   for (const theme of ALL_THEMES) {
@@ -102,6 +125,8 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
       ...PAGES.map(p => p.slug),
       SERVICES_INDEX.slug,
       ...SERVICES.map(s => `${SERVICES_INDEX.slug}/${s.slug}`),
+      BLOG_INDEX.slug,
+      ...posts.map(p => `${BLOG_INDEX.slug}/${p.slug}`),
       ...themePages,
     ]),
   );

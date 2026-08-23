@@ -253,6 +253,8 @@ a { color: var(--brass-deep); }
   background: var(--surface); margin-top: 1.5rem;
 }
 .service-back { margin-top: 2rem; }
+.post-date { color: var(--ink-muted); font-size: 0.85rem; margin: -0.4rem 0 1.2rem; }
+.post-services { margin-top: 1.8rem; font-size: 0.9rem; color: var(--ink-muted); }
 
 /* ── текстовые страницы ────────────────────────────────────── */
 .page { max-width: 720px; }

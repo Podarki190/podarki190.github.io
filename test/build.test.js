@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { buildSite } from '../src/build.js';
 import { PAGES } from '../src/pages.js';
+import { publishedPosts } from '../src/blog.js';
 
 test('buildSite writes index, one page per product with a photo, sitemap and robots.txt', async () => {
   const outDir = await mkdtemp(path.join(tmpdir(), 'catalog-build-'));
@@ -64,6 +65,18 @@ test('buildSite writes index, one page per product with a photo, sitemap and rob
   const stamp = index.match(/style\.css\?v=([a-f0-9]{8})/);
   assert.ok(stamp, 'на главной нет версии стилей');
   assert.ok(productPage.includes(`style.css?v=${stamp[1]}`));
+
+  // блог: витрина, страница записи, её фотографии рядом с ней и адреса в карте
+  const blogIndex = await readFile(path.join(outDir, 'blog', 'index.html'), 'utf8');
+  assert.match(blogIndex, /Блог мастерской/);
+  assert.ok(sitemap.includes('/blog/'), 'блога нет в sitemap');
+  for (const post of publishedPosts()) {
+    const dir = path.join(outDir, 'blog', post.slug);
+    assert.match(await readFile(path.join(dir, 'index.html'), 'utf8'), /<h1>/);
+    // Картинка должна лежать именно рядом со страницей: адрес в HTML — «1.jpg».
+    for (let i = 1; i <= post.alts.length; i += 1) await readFile(path.join(dir, `${i}.jpg`));
+    assert.ok(sitemap.includes(`/blog/${post.slug}/`), `${post.slug} нет в sitemap`);
+  }
 
   // копии для браузера
   await readFile(path.join(outDir, 'links.js'), 'utf8');
