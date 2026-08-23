@@ -9,6 +9,10 @@ export function formatPhone(phone) {
   return `8 (${d.slice(1, 4)}) ${d.slice(4, 7)}-${d.slice(7, 9)}-${d.slice(9, 11)}`;
 }
 export const TELEGRAM = 'Podarki190';
+// Личный аккаунт выше — для связи, канал ниже — для соцсетей. Это разные вещи:
+// в личку пишут заказ, на канал подписываются. Канал ещё и кормит Дзен через
+// zen_sync_bot, поэтому подменять его личкой нельзя.
+export const TELEGRAM_CHANNEL = 'lazerklin_ru';
 // Подтверждение прав на сайт в вебмастерах и счётчик Метрики. Пусто — значит
 // ничего лишнего в страницы не попадает; заполняется после регистрации.
 export const YANDEX_VERIFICATION = '647c4b8adf060779';
@@ -105,7 +109,7 @@ export function truncate(text, maxLen) {
 // один и тот же, иначе где-нибудь потеряется очередная ссылка.
 export const SOCIALS = [
   { id: 'vk', label: 'ВКонтакте', note: 'работы, статьи и живые отзывы', href: VK_LINK },
-  { id: 'tg', label: 'Telegram', note: `@${TELEGRAM}`, href: `https://t.me/${TELEGRAM}` },
+  { id: 'tg', label: 'Telegram', note: 'работы и новости мастерской', href: `https://t.me/${TELEGRAM_CHANNEL}` },
   { id: 'wa', label: 'WhatsApp', note: formatPhone(PHONE), href: `https://wa.me/${PHONE.replace('+', '')}` },
   { id: 'max', label: 'Макс', note: formatPhone(PHONE), href: MAX_LINK },
 ];
