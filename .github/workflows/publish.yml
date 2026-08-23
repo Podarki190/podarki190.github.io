@@ -1,0 +1,56 @@
+name: Publish the post of the day
+
+# Раздача поста дня в Telegram и ВКонтакте. Дзен подключён к Telegram и
+# заберёт запись сам, отдельного шага для него не нужно.
+#
+# РУБИЛЬНИК: задача не делает ничего, пока в настройках репозитория не заведена
+# переменная PUBLISH_ENABLED со значением true (Settings → Secrets and variables
+# → Actions → Variables). Так расписание можно держать включённым, а публикацию
+# — выключенной, и не править код ради паузы.
+#
+# Время: 07:00 UTC — это 10:00 по Москве. Сборка сайта идёт в 03:00 UTC, то есть
+# к моменту раздачи статья на сайте уже стоит, и ссылка из поста никуда не ведёт
+# в пустоту. Порядок важен: сначала свой сайт, потом всё остальное.
+
+on:
+  schedule:
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Показать, что было бы отправлено, ничего не отправляя
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    if: vars.PUBLISH_ENABLED == 'true' || inputs.dry_run
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Publish
+        run: node scripts/publish.mjs ${{ inputs.dry_run && '--dry-run' || '' }}
+        env:
+          VK_GROUP_TOKEN: ${{ secrets.VK_GROUP_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL: '@lazerklin_ru'
+          SITE_BASE_URL: https://lazerklin.ru
+
+      # Отметка об отправке возвращается в репозиторий, иначе завтрашний запуск
+      # не узнает о сегодняшнем. [skip ci] — чтобы этот коммит не запускал
+      # пересборку сайта: содержимое от него не меняется.
+      - name: Remember what went out
+        if: ${{ !inputs.dry_run }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add publish-state.json
+          git diff --staged --quiet || git commit -m 'Publish state: post of the day went out [skip ci]'
+          git push
