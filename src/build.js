@@ -42,6 +42,7 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
     ...SERVICES.filter(s => s.photo && !s.photo.startsWith('http'))
       .map(s => new URL(`../static/uslugi/${s.photo}`, import.meta.url)),
     new URL('../static/uslugi/masterskaya.jpg', import.meta.url),
+    new URL('../static/uslugi/o-nas.jpg', import.meta.url),
   ];
   const version = await assetVersion(assetSources);
 
