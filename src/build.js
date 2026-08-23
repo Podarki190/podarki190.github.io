@@ -33,10 +33,11 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
 
   const assetSources = [
     new URL('./links.js', import.meta.url),
-    // Файл подтверждения прав в Яндекс.Вебмастере — выдаётся под конкретный сайт,
-    // при смене домена Вебмастер выдаёт новый.
+    // Файлы подтверждения прав — Яндекс.Вебмастер и Дзен. Выдаются под конкретный
+    // сайт, при смене домена оба сервиса выдают новые.
     ...['style.css', 'search.js', 'order-form.js', 'product-nav.js', 'favicon.png',
-      'icons.svg', '404.html', 'yandex_647c4b8adf060779.html']
+      'icons.svg', '404.html', 'yandex_647c4b8adf060779.html',
+      'zen_Jszj4lUwzl1Hir3cl4Dta56w64HLNyMOMkBh8JVTv5VvXqDiXRpUmhY5E1yYFNaT.html']
       .map(a => new URL(`../static/${a}`, import.meta.url)),
     ...WORKS_PHOTOS.map(f => new URL(`../static/raboty/${encodeURIComponent(f)}`, import.meta.url)),
     ...SERVICES.filter(s => s.photo && !s.photo.startsWith('http'))
