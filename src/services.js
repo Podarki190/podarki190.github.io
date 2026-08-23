@@ -2311,7 +2311,7 @@ export const SERVICES = [
   {
     slug: 'nakladki-na-mebel',
     nav: 'Накладки на мебель',
-    photo: '',
+    photo: 'nakladki-na-mebel.jpg',
     short: 'Резные накладки на фасады, двери и мебель под покраску.',
     title: 'Декоративные накладки на двери и мебель — резьба на заказ',
     description: 'Резные накладки на фасады, двери и мебель: ажурный узор из фанеры и МДФ под покраску, любой размер и рисунок. Обновим старую мебель, изготовление в Клину.',
@@ -4480,3 +4480,73 @@ export const SERVICES_INDEX = {
   title: 'Услуги мастерской «Лазер Клин»: лазерная резка и гравировка в Клину',
   description: 'Лазерная резка и гравировка в Клину: печати и штампы, медали, адресники, таблички, заготовки для творчества, декор для кафе, деревянная упаковка.',
 };
+
+// Витрина услуг разбита на разделы: полутора сотнями плиток одним потоком
+// пользоваться невозможно. Порядок групп — от основного товара к вспомогательному.
+export const SERVICE_GROUPS = [
+  { id: 'chasy', label: 'Настенные часы', slugs: [
+    'chasy-na-zakaz', 'chasy-po-foto', 'chasy-s-logotipom', 'chasy-iz-vinila',
+    'cifry-dlya-chasov'
+  ] },
+  { id: 'rezka', label: 'Резка и раскрой', slugs: [
+    'lazernaya-rezka', 'rezka-fanery', 'rezka-hdf', 'rezka-mdf', 'rezka-orgstekla',
+    'rezka-pvh', 'rezka-penoplasta', 'frezerovka', 'orgsteklo', 'shirmy', 'nakladki-na-mebel',
+    'ekrany-na-batarei', 'obemnye-bukvy', 'laytboksy'
+  ] },
+  { id: 'gravirovka', label: 'Гравировка', slugs: [
+    'gravirovka', 'gravirovka-po-derevu', 'gravirovka-po-metallu', 'gravirovka-po-steklu',
+    'gravirovka-po-kozhe', 'gravirovka-po-kamnyu', 'gravirovka-nozhey',
+    'gravirovka-na-oruzhii', 'gravirovka-zippo', 'gravirovka-lozhek', 'gravirovka-remney',
+    'gravirovka-na-telefone', 'gravirovka-ruchek', 'gravirovka-fleshek',
+    'gravirovka-powerbank', 'gravirovka-ezhednevnikov', 'markirovka', 'zhetony', 'kleyma'
+  ] },
+  { id: 'pechat', label: 'Печать и типография', slugs: [
+    'tipografiya', 'vizitki', 'listovki', 'kalendari', 'pechat-bolshogo-formata',
+    'pechat-na-bannere', 'pechat-na-plenke', 'pechat-na-holste', 'fotooboi', 'bannery',
+    'naklejki', 'shtendery', 'roll-apy', 'press-volly', 'brendirovanie-avto',
+    'inzhenernaya-pechat', 'magnity', 'foto-na-metalle', 'kruzhki', 'sertifikaty'
+  ] },
+  { id: 'plotter', label: 'Плоттерная резка плёнки', slugs: [
+    'plotternaya-rezka', 'naklejki-na-vitriny', 'oformlenie-ostrovkov', 'naklejki-na-steny',
+    'markirovka-naklejkami', 'trafarety-iz-plenki', 'nadpisi-na-transport', 'stikery',
+    'matirovanie-stekla'
+  ] },
+  { id: 'trafarety', label: 'Трафареты', slugs: [
+    'trafarety', 'trafarety-kirpich', 'trafarety-dlya-pokraski', 'trafarety-dlya-zamkov',
+    'trafarety-razmetka'
+  ] },
+  { id: 'pechati', label: 'Печати и штампы', slugs: [
+    'pechati-shtampy', 'pechat-dlya-ip', 'pechat-dlya-ooo', 'pechat-vracha', 'shtampy',
+    'faksimile'
+  ] },
+  { id: 'nagrady', label: 'Награды и медальницы', slugs: [
+    'medali', 'kubki', 'statuetki', 'diplomy', 'plaketki', 'doski-pocheta', 'medalnicy',
+    'medalnicy-gimnastika', 'medalnicy-futbol', 'medalnicy-plavanie', 'medalnicy-hokkey',
+    'medalnicy-edinoborstva', 'medalnicy-karate', 'medalnicy-tancy',
+    'medalnicy-figurnoe-katanie'
+  ] },
+  { id: 'svadba', label: 'Свадьба и праздники', slugs: [
+    'svadba', 'priglasheniya', 'plan-rassadki', 'korobochka-dlya-kolec', 'kniga-pozhelaniy',
+    'bokaly', 'arki', 'monogrammy', 'toppery', 'novyi-god', 'elochnye-igrushki',
+    'advent-kalendari', 'vypusknoy', 'prikolnye-podarki'
+  ] },
+  { id: 'detyam', label: 'Детям', slugs: [
+    'bizibordy', 'pazly', 'nardy-shahmaty', 'konstruktory', 'kukolnye-domiki', 'rostomery',
+    'metriki', 'lineyki'
+  ] },
+  { id: 'dom', label: 'Дом и подарки', slugs: [
+    'kartiny', 'panno', 'semeynoe-drevo', 'karta-puteshestviy', 'fotoramki', 'klyuchnicy',
+    'kopilki', 'oberegi', 'statuetki-semya', 'razdelochnye-doski', 'menazhnicy',
+    'podarki-muzhchinam', 'zagotovki', 'korobochki', 'birki', 'adresniki',
+    'adresnye-tablichki', 'avtobreloki', 'tablichka-nomer-telefona', 'ramki-dlya-nomerov'
+  ] },
+  { id: 'biznes', label: 'Бизнесу и заведениям', slugs: [
+    'tablichki', 'tablichki-na-dveri', 'tablichki-zerkalnye', 'tablichki-pamyatniki',
+    'navigaciya', 'stendy', 'nomerki', 'beydzhi', 'shildiki', 'cennikoderzhateli',
+    'menyu-dlya-kafe', 'nomerki-na-stoly', 'kostery', 'dekor-horeca', 'oformlenie-kafe',
+    'korporativnye-podarki', 'oborudovanie-dlya-yarmarok', 'organayzery'
+  ] },
+  { id: 'makety', label: 'Макеты и дизайн', slugs: [
+    'makety-dlya-rezki', 'razrabotka-logotipa', 'makety-dlya-chpu'
+  ] },
+];

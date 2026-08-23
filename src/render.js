@@ -5,7 +5,7 @@ import {
   buildCardWhatsAppMessage, truncate, renderSocials,
 } from './links.js';
 import { PAGES } from './pages.js';
-import { SERVICES, SERVICES_INDEX } from './services.js';
+import { SERVICES, SERVICES_INDEX, SERVICE_GROUPS } from './services.js';
 import { ALL_THEMES, themesOf, isLayered } from './themes.js';
 import { isMug } from './wbCatalog.js';
 
@@ -231,14 +231,33 @@ ${page.body}
 const servicePhotoSrc = (service, prefix) =>
   service.photo.startsWith('http') ? service.photo : `${prefix}uslugi/${service.photo}`;
 
+// Полторы сотни плиток одним потоком листать невозможно, поэтому витрина
+// разбита на разделы, а сверху — ссылки-якоря на каждый. Разделы обычные,
+// без скриптов: поисковик видит их как оглавление, человек — как содержание.
 export function renderServicesIndex(version = '') {
-  const cards = SERVICES.map(service => `<a class="service-card" href="${service.slug}/">
+  const card = (service) => `<a class="service-card" href="${service.slug}/">
     ${service.photo
       ? `<img class="${service.photo.startsWith('http') ? 'tall' : ''}" src="${servicePhotoSrc(service, '../')}" loading="lazy" alt="${escapeHtml(service.nav)}">`
       : '<div class="service-noimg" aria-hidden="true"></div>'}
-    <h2>${escapeHtml(service.nav)}</h2>
+    <h3>${escapeHtml(service.nav)}</h3>
     <p>${escapeHtml(service.short)}</p>
-  </a>`).join('\n  ');
+  </a>`;
+
+  const bySlug = new Map(SERVICES.map(s => [s.slug, s]));
+  const groups = SERVICE_GROUPS
+    .map(group => ({ ...group, items: group.slugs.map(slug => bySlug.get(slug)).filter(Boolean) }))
+    .filter(group => group.items.length > 0);
+
+  const jump = groups
+    .map(group => `<a class="chip" href="#${group.id}">${escapeHtml(group.label)}</a>`)
+    .join('\n    ');
+
+  const cards = groups.map(group => `<section class="services-group" id="${group.id}">
+  <h2>${escapeHtml(group.label)} <span class="services-count">${group.items.length}</span></h2>
+  <div class="services-grid">
+  ${group.items.map(card).join('\n  ')}
+  </div>
+</section>`).join('\n');
 
   return pageShell({
     title: SERVICES_INDEX.title,
@@ -248,9 +267,10 @@ export function renderServicesIndex(version = '') {
   <img class="services-hero" src="../uslugi/masterskaya.jpg"
     alt="Мастерская «Лазер Клин» в Клину: лазерные станки и готовые изделия из дерева">
   <p class="services-lead">Мастерская «Лазер Клин» на Литейной, 20: режем и гравируем по вашим макетам, изготавливаем печати, награды, упаковку и декор. Всё делается под заказ, поэтому стоимость считается по макету, материалу и тиражу — расскажите задачу, и мы посчитаем.</p>
-  <div class="services-grid">
+  <nav class="chips services-jump" aria-label="Разделы услуг">
+    ${jump}
+  </nav>
   ${cards}
-  </div>
 </article>`,
     prefix: '../',
     version,
