@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
 import { POSTS, BLOG_INDEX, publishedPosts } from '../src/blog.js';
 import { renderBlogIndex, renderBlogPost } from '../src/render.js';
 import { SERVICES } from '../src/services.js';
@@ -36,6 +37,18 @@ test('Telegram text fits the album caption and yields a sane Dzen title', () => 
     const first = post.tg.split('\n')[0];
     assert.ok(first.length <= DZEN_TITLE_LIMIT,
       `${post.slug}: первая фраза ${first.length} знаков, лимит ${DZEN_TITLE_LIMIT}`);
+  }
+});
+
+test('photos exist for every post, including the ones still waiting', () => {
+  // Сборка копирует фотографии только у вышедших записей. Забытый файл у
+  // записи на две недели вперёд молча пройдёт все проверки, а потом уронит
+  // ночную сборку в свой день — и сайт останется без обновления.
+  for (const post of POSTS) {
+    for (let i = 1; i <= post.alts.length; i += 1) {
+      const file = new URL(`../static/blog/${post.slug}/${i}.jpg`, import.meta.url);
+      assert.ok(existsSync(file), `${post.slug}: нет файла ${i}.jpg`);
+    }
   }
 });
 
