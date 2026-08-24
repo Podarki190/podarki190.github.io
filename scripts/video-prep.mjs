@@ -22,7 +22,7 @@
 // включать их по умолчанию — значит ухудшать картинку ради ощущения работы.
 
 import { spawn } from 'node:child_process';
-import { readdir, stat, mkdir } from 'node:fs/promises';
+import { readdir, stat, mkdir, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -153,12 +153,18 @@ async function main() {
   // просто убрали лишнее. Отсюда же замедление: 0,87 скорости успокаивает
   // проводку камерой, а кадров для этого хватает — телефон снимает 60 в секунду,
   // отдаём 30.
+  // Концовка с контактами. Рисуется питоном (Pillow), а не фильтром drawtext:
+  // drawtext на Windows требует fontconfig, без него ffmpeg падает с segfault.
+  const outroSec = process.argv.includes('--outro') ? Number(arg('outro-sec', 2.5)) : 0;
+  const OUTRO_FADE = 0.6;
+
   const dissolve = process.argv.includes('--hard-cuts') ? 0 : Number(arg('dissolve', 1));
   const slow = Number(arg('slow', 1));
   const segDur = (c) => (c.to - c.from) * slow;
-  const totalDur = cuts.length
+  const bodyDur = cuts.length
     ? cuts.reduce((sum, c) => sum + segDur(c), 0) - dissolve * (cuts.length - 1)
     : dur;
+  const totalDur = outroSec ? bodyDur + outroSec - OUTRO_FADE : bodyDur;
 
   const body = chain.replace(/,fade=t=out[^,]*/, '');
   let video;
@@ -176,11 +182,27 @@ async function main() {
         prev = label;
         offset += segDur(cuts[i]) - dissolve;
       }
-      video += `[x]fade=t=in:d=0.6,fade=t=out:st=${(totalDur - 0.8).toFixed(2)}:d=0.8,format=yuv420p[v];`;
+      video += `[x]fade=t=in:d=0.6,fade=t=out:st=${(bodyDur - 0.8).toFixed(2)}:d=0.8,format=yuv420p[v];`;
     } else {
       video += `${cuts.map((_, i) => `[c${i}]`).join('')}concat=n=${cuts.length}:v=1:a=0,`
-        + `fade=t=out:st=${(totalDur - 0.4).toFixed(2)}:d=0.4,format=yuv420p[v];`;
+        + `fade=t=out:st=${(bodyDur - 0.4).toFixed(2)}:d=0.4,format=yuv420p[v];`;
     }
+  }
+
+  let outroPng = null;
+  if (outroSec) {
+    outroPng = path.join(outDir, `.outro-${width}x${height}.png`);
+    await run('python', [path.join(ROOT, 'scripts', 'outro.py'), String(width), String(height), outroPng]);
+    // Затемнение в конце основной части убираем: его роль берёт на себя переход
+    // в карточку, а два затемнения подряд дают провал в чёрное посередине.
+    video = video.replace(/fade=t=out:[^,\]]*,?/g, '');
+    // xfade требует одинаковой частоты кадров у обоих входов, а телефон снимает
+    // 60 против 25 у зацикленной картинки — без приведения ffmpeg просто не
+    // открывает кодировщик и роняет сборку без внятного сообщения.
+    video = video.replace('[v];', ',fps=30[vbody];')
+      + `[2:v]scale=${width}:${height},fps=30,format=yuv420p[card];`
+      + `[vbody][card]xfade=transition=fade:duration=${OUTRO_FADE}:offset=${(bodyDur - OUTRO_FADE).toFixed(2)},`
+      + `fade=t=out:st=${(totalDur - 0.5).toFixed(2)}:d=0.5,format=yuv420p[v];`;
   }
 
   const args = [
@@ -188,6 +210,7 @@ async function main() {
     ...(cuts.length ? [] : ['-ss', String(start), '-t', String(dur)]),
     '-i', input,
     '-stream_loop', '-1', '-i', music,
+    ...(outroSec ? ['-loop', '1', '-t', String(outroSec), '-i', outroPng] : []),
     '-filter_complex', video
       + `[1:a]loudnorm=I=${LOUDNESS}:TP=-1.5,afade=t=in:d=${FADE_IN},`
       + `afade=t=out:st=${(totalDur - FADE_OUT).toFixed(2)}:d=${FADE_OUT}[a]`,
@@ -221,6 +244,8 @@ async function main() {
   if (pixFmt !== 'yuv420p') {
     throw new Error(`на выходе ${pixFmt} вместо yuv420p — такой файл не откроется у людей`);
   }
+
+  if (outroPng) await rm(outroPng, { force: true });
 
   console.log(`готово   : ${path.basename(out)} — ${w}x${h}, ${(size / 1024 / 1024).toFixed(1)} МБ, ${pixFmt}`);
 }
