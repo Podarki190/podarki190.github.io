@@ -4,15 +4,16 @@
 //   node scripts/video-prep.mjs video-inbox/2026-08-24.mp4 --dur 24
 //   node scripts/video-prep.mjs <файл> --start 3 --dur 20 --music trek.mp3 --out out.mp4
 //
-// Чего здесь намеренно нет:
+//   node scripts/video-prep.mjs <файл> --cuts "2.5-14.5,20-31.5"
 //
-// Апскейла. Телефон при отправке в Telegram уже отдал 720x1280, и растягивание
-// до 1080 не добавит ни одной детали — только вес. Вертикальный кадр остаётся
-// как есть, приводится только тот, что пришёл не в 9:16.
+// Апскейла здесь намеренно нет: телефон при отправке в Telegram уже отдал
+// 720x1280, и растягивание до 1080 не добавит ни одной детали, только вес.
+// Вертикальный кадр остаётся как есть, приводится только пришедший не в 9:16.
 //
-// Стабилизации. В сборке ffmpeg есть vidstab, но на быстрых проводках камерой
-// он даёт «плавание» хуже самой тряски. Включается флагом --stab, когда съёмка
-// действительно дёрганая, а не по умолчанию.
+// Умолчания подобраны под съёмку с рук: куски склеиваются растворением, а не
+// встык, скорость 0,87, стабилизация включена. Всё это про одно — «дёрганье»
+// первое, что замечает зритель, и оно отталкивает сильнее, чем плохой свет.
+// Встык — флагом --hard-cuts, без стабилизации — флагом --no-stab.
 
 import { spawn } from 'node:child_process';
 import { readdir, stat, mkdir } from 'node:fs/promises';
@@ -124,21 +125,55 @@ async function main() {
   // Виньетка не украшение — она гасит углы, где как раз и остаётся мусор.
   const look = 'eq=contrast=1.12:saturation=1.18:gamma=1.03,unsharp=3:3:0.5,vignette=PI/5';
 
-  const stab = process.argv.includes('--stab');
+  // Тряска — вторая половина того, что зритель называет дёрганьем. Раньше
+  // стабилизация была за флагом из-за «плавания» на быстрых проводках; вместе с
+  // замедлением этот эффект пропадает, поэтому теперь она включена, а флаг
+  // --no-stab оставлен на случай, когда она всё-таки мешает.
+  const stab = !process.argv.includes('--no-stab');
   const chain = [
     fit,
     punch,
-    stab ? 'deshake=rx=16:ry=16' : null,
+    stab ? 'deshake=rx=32:ry=32:edge=clamp' : null,
     look,
     `fade=t=out:st=${(dur - 0.4).toFixed(2)}:d=0.4`,
     'format=yuv420p',
   ].filter(x => x && x !== 'null').join(',');
 
-  const video = cuts.length
-    ? cuts.map((c, i) => `[0:v]trim=${c.from}:${c.to},setpts=PTS-STARTPTS,${chain.replace(/,fade=t=out[^,]*/, '')}[c${i}];`).join('')
-      + cuts.map((_, i) => `[c${i}]`).join('')
-      + `concat=n=${cuts.length}:v=1:a=0,fade=t=out:st=${(dur - 0.4).toFixed(2)}:d=0.4,format=yuv420p[v];`
-    : `[0:v]${chain}[v];`;
+  // Как склеивать куски. Встык — только по просьбе: на съёмке с рук резкая
+  // склейка читается не как ритм, а как брак, и первое, что замечает зритель, —
+  // рывок. Растворение оставляет ощущение одного длинного кадра, из которого
+  // просто убрали лишнее. Отсюда же замедление: 0,87 скорости успокаивает
+  // проводку камерой, а кадров для этого хватает — телефон снимает 60 в секунду,
+  // отдаём 30.
+  const dissolve = process.argv.includes('--hard-cuts') ? 0 : Number(arg('dissolve', 1));
+  const slow = Number(arg('slow', 1.15));
+  const segDur = (c) => (c.to - c.from) * slow;
+  const totalDur = cuts.length
+    ? cuts.reduce((sum, c) => sum + segDur(c), 0) - dissolve * (cuts.length - 1)
+    : dur;
+
+  const body = chain.replace(/,fade=t=out[^,]*/, '');
+  let video;
+  if (!cuts.length) {
+    video = `[0:v]${chain}[v];`;
+  } else {
+    video = cuts.map((c, i) =>
+      `[0:v]trim=${c.from}:${c.to},setpts=PTS-STARTPTS,setpts=${slow}*PTS,${body},format=yuv420p[c${i}];`).join('');
+    if (dissolve > 0) {
+      let prev = '[c0]';
+      let offset = segDur(cuts[0]) - dissolve;
+      for (let i = 1; i < cuts.length; i += 1) {
+        const label = i === cuts.length - 1 ? '[x]' : `[m${i}]`;
+        video += `${prev}[c${i}]xfade=transition=fade:duration=${dissolve}:offset=${offset.toFixed(2)}${label};`;
+        prev = label;
+        offset += segDur(cuts[i]) - dissolve;
+      }
+      video += `[x]fade=t=in:d=0.6,fade=t=out:st=${(totalDur - 0.8).toFixed(2)}:d=0.8[v];`;
+    } else {
+      video += `${cuts.map((_, i) => `[c${i}]`).join('')}concat=n=${cuts.length}:v=1:a=0,`
+        + `fade=t=out:st=${(totalDur - 0.4).toFixed(2)}:d=0.4,format=yuv420p[v];`;
+    }
+  }
 
   const args = [
     '-v', 'error', '-stats',
@@ -147,8 +182,8 @@ async function main() {
     '-stream_loop', '-1', '-i', music,
     '-filter_complex', video
       + `[1:a]loudnorm=I=${LOUDNESS}:TP=-1.5,afade=t=in:d=${FADE_IN},`
-      + `afade=t=out:st=${(dur - FADE_OUT).toFixed(2)}:d=${FADE_OUT}[a]`,
-    '-map', '[v]', '-map', '[a]', '-t', String(dur), '-r', '30',
+      + `afade=t=out:st=${(totalDur - FADE_OUT).toFixed(2)}:d=${FADE_OUT}[a]`,
+    '-map', '[v]', '-map', '[a]', '-t', String(totalDur.toFixed(2)), '-r', '30',
     '-c:v', 'libx264', '-preset', 'medium', '-crf', '23', '-movflags', '+faststart',
     '-c:a', 'aac', '-b:a', '128k', '-ar', '44100',
     out, '-y',
@@ -156,10 +191,11 @@ async function main() {
 
   console.log(`исходник : ${width}x${height}, ${sourceDur.toFixed(1)} с`);
   console.log(cuts.length
-    ? `монтаж   : ${cuts.length} склеек, ${dur.toFixed(1)} с`
+    ? `монтаж   : ${cuts.length} кусков, ${totalDur.toFixed(1)} с, `
+      + (dissolve ? `растворение ${dissolve} с, скорость ${(1 / slow).toFixed(2)}` : 'встык')
     : `берём    : с ${start} с, длительность ${dur} с`);
   console.log(`музыка   : ${path.basename(music)}`);
-  if (stab) console.log('стабилизация: включена');
+  console.log(`стабилизация: ${stab ? 'включена' : 'выключена'}`);
 
   await run(ffmpeg, args);
 
