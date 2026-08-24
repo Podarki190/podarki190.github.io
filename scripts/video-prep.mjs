@@ -10,10 +10,16 @@
 // 720x1280, и растягивание до 1080 не добавит ни одной детали, только вес.
 // Вертикальный кадр остаётся как есть, приводится только пришедший не в 9:16.
 //
-// Умолчания подобраны под съёмку с рук: куски склеиваются растворением, а не
-// встык, скорость 0,87, стабилизация включена. Всё это про одно — «дёрганье»
-// первое, что замечает зритель, и оно отталкивает сильнее, чем плохой свет.
-// Встык — флагом --hard-cuts, без стабилизации — флагом --no-stab.
+// УМОЛЧАНИЯ НАМЕРЕННО МИНИМАЛЬНЫ: обрезка, музыка, затемнение в конце. Всё
+// остальное проверено на живом материале и владельцем отвергнуто, причём
+// заслуженно:
+//   --zoom 1.2  обрезает кадр и растягивает обратно, то есть апскейлит и мылит;
+//   --stab      deshake подвигает каждый кадр отдельно, картинка «плавает»;
+//   --slow 1.15 растягивает временные метки без досоздания кадров: при 60 в
+//               исходнике и 30 на выходе шаг неровный, и это видно как рывки;
+//   --look      лёгкий контраст и насыщенность, единственное почти безобидное.
+// Флаги оставлены, потому что на другом материале они могут пригодиться. Но
+// включать их по умолчанию — значит ухудшать картинку ради ощущения работы.
 
 import { spawn } from 'node:child_process';
 import { readdir, stat, mkdir } from 'node:fs/promises';
@@ -114,22 +120,24 @@ async function main() {
   // Наезд в кадр. Снято почти всегда «предмет лежит среди рабочего беспорядка»,
   // и коробка с пенопластом по краям кадра портит впечатление сильнее, чем
   // что-либо ещё. Обрезка на 20% выкидывает края и заодно приближает товар.
-  const zoom = Number(arg('zoom', 1.2));
-  const cw = Math.round(width / zoom / 2) * 2;
-  const ch = Math.round(height / zoom / 2) * 2;
-  const punch = vertical
+  const zoom = Number(arg('zoom', 1));
+  const cw = Math.round(width / Math.max(zoom, 1) / 2) * 2;
+  const ch = Math.round(height / Math.max(zoom, 1) / 2) * 2;
+  const punch = vertical && zoom > 1
     ? `crop=${cw}:${ch}:${Math.round((width - cw) / 2)}:${Math.round((height - ch) / 2)},scale=${width}:${height}`
     : null;
 
   // Цвет с телефона плоский: контраст занижен, дерево уходит в синеву.
   // Виньетка не украшение — она гасит углы, где как раз и остаётся мусор.
-  const look = 'eq=contrast=1.12:saturation=1.18:gamma=1.03,unsharp=3:3:0.5,vignette=PI/5';
+  const look = process.argv.includes('--look')
+    ? 'eq=contrast=1.10:saturation=1.12:gamma=1.02'
+    : null;
 
   // Тряска — вторая половина того, что зритель называет дёрганьем. Раньше
   // стабилизация была за флагом из-за «плавания» на быстрых проводках; вместе с
   // замедлением этот эффект пропадает, поэтому теперь она включена, а флаг
   // --no-stab оставлен на случай, когда она всё-таки мешает.
-  const stab = !process.argv.includes('--no-stab');
+  const stab = process.argv.includes('--stab');
   const chain = [
     fit,
     punch,
@@ -146,7 +154,7 @@ async function main() {
   // проводку камерой, а кадров для этого хватает — телефон снимает 60 в секунду,
   // отдаём 30.
   const dissolve = process.argv.includes('--hard-cuts') ? 0 : Number(arg('dissolve', 1));
-  const slow = Number(arg('slow', 1.15));
+  const slow = Number(arg('slow', 1));
   const segDur = (c) => (c.to - c.from) * slow;
   const totalDur = cuts.length
     ? cuts.reduce((sum, c) => sum + segDur(c), 0) - dissolve * (cuts.length - 1)
@@ -158,7 +166,7 @@ async function main() {
     video = `[0:v]${chain}[v];`;
   } else {
     video = cuts.map((c, i) =>
-      `[0:v]trim=${c.from}:${c.to},setpts=PTS-STARTPTS,setpts=${slow}*PTS,${body},format=yuv420p[c${i}];`).join('');
+      `[0:v]trim=${c.from}:${c.to},setpts=PTS-STARTPTS,${slow === 1 ? '' : `setpts=${slow}*PTS,`}${body},format=yuv420p[c${i}];`).join('');
     if (dissolve > 0) {
       let prev = '[c0]';
       let offset = segDur(cuts[0]) - dissolve;
