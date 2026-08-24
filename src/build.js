@@ -10,6 +10,7 @@ import {
   renderServicesIndex, renderServicePage, renderBlogIndex, renderBlogPost,
 } from './render.js';
 import { renderSitemap, renderRobotsTxt } from './sitemap.js';
+import { SITE_URL } from './links.js';
 import { PAGES, WORKS_PHOTOS } from './pages.js';
 import { BLOG_INDEX, publishedPosts } from './blog.js';
 import { SERVICES, SERVICES_INDEX } from './services.js';
@@ -53,7 +54,7 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
   await writeFile(path.join(outDir, 'robots.txt'), renderRobotsTxt(baseUrl));
   // Свой домен. При публикации через свой workflow GitHub не создаёт CNAME сам —
   // без этого файла каждая выкладка сбрасывала бы домен на *.github.io.
-  await writeFile(path.join(outDir, 'CNAME'), 'lazerklin.ru\n');
+  await writeFile(path.join(outDir, 'CNAME'), `${new URL(SITE_URL).host}\n`);
 
   for (const page of PAGES) {
     const pageDir = path.join(outDir, page.slug);

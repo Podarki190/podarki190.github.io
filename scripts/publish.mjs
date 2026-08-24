@@ -35,42 +35,24 @@ async function vk(method, params, token) {
   return data.response;
 }
 
-// Штатный photos.getWallUploadServer групповым ключам закрыт (ошибка 27), а
-// getMessagesUploadServer открыт — и сохранённое через него фото принадлежит
-// сообществу, поэтому цепляется к записи на стене как родное. Это не изящно,
-// но это единственный путь без токена пользователя.
-async function vkUploadPhoto(file, token) {
-  const { upload_url: uploadUrl } = await vk('photos.getMessagesUploadServer',
-    { group_id: VK_GROUP_ID }, token);
-
-  const form = new FormData();
-  form.append('photo', new Blob([await readFile(file)], { type: 'image/jpeg' }), 'photo.jpg');
-  const uploaded = await (await fetch(uploadUrl, { method: 'POST', body: form })).json();
-
-  const [photo] = await vk('photos.saveMessagesPhoto', {
-    server: uploaded.server, photo: uploaded.photo, hash: uploaded.hash,
-  }, token);
-  return `photo${photo.owner_id}_${photo.id}`;
-}
-
-// Ссылка уходит первым комментарием, а не в тело записи: ВК занижает охват
-// постам с внешними ссылками, а комментарии под этот фильтр не попадают.
-async function publishToVk(post, files, url, token) {
-  const attachments = [];
-  for (const file of files) attachments.push(await vkUploadPhoto(file, token));
-
+// Фотографий здесь нет и быть не может — это проверено, а не предположено.
+// Групповому ключу закрыты и photos.getWallUploadServer, и photos.saveWallPhoto
+// (обе — ошибка 27). Открыт photos.getMessagesUploadServer, но фото из скрытого
+// альбома сообщений стена молча выбрасывает: запись создаётся, вложения в ней
+// нет. С access_key — то же самое. Токен пользователя эту дверь открыл бы, но
+// у приложения типа «мини-приложение» нет права offline, и такой токен живёт
+// сутки — для ночной задачи бесполезен.
+//
+// Поэтому вложение — ссылка на статью, а карточку с картинкой ВК строит сам из
+// og:image. Одна фотография вместо трёх, зато без ручной работы. Ссылка при
+// этом обязана быть в записи, а не в комментарии: комментарий не даёт картинки,
+// а запись без картинки в ленте не замечают вовсе.
+async function publishToVk(post, url, token) {
   const { post_id: postId } = await vk('wall.post', {
     owner_id: -VK_GROUP_ID,
     from_group: 1,
     message: post.vk,
-    attachments: attachments.join(','),
-  }, token);
-
-  await vk('wall.createComment', {
-    owner_id: -VK_GROUP_ID,
-    post_id: postId,
-    from_group: 1,
-    message: `Подробно, с размерами и сроками: ${url}`,
+    attachments: url,
   }, token);
 
   return `https://vk.com/wall-${VK_GROUP_ID}_${postId}`;
@@ -142,7 +124,7 @@ async function main() {
   const channel = process.env.TELEGRAM_CHANNEL || '@lazerklin_ru';
   const jobs = [
     ['tg', 'Telegram', () => publishToTelegram(post, files, url, process.env.TELEGRAM_BOT_TOKEN, channel)],
-    ['vk', 'ВКонтакте', () => publishToVk(post, files, url, process.env.VK_GROUP_TOKEN)],
+    ['vk', 'ВКонтакте', () => publishToVk(post, url, process.env.VK_GROUP_TOKEN)],
   ];
 
   // Площадки независимы: если упал Telegram, ВК всё равно должен выйти, а

@@ -1,4 +1,5 @@
 import {
+  SITE_URL,
   PHONE, PHONES, ORIGINAL_PRICE, SALE_PRICE, LAYERED_PRICE, SHIPPING_TEXT, ORDER_ENDPOINT,
   METRIKA_ID, YANDEX_VERIFICATION, GOOGLE_VERIFICATION, MUG_PRICE, MUG_ORIGINAL_PRICE,
   formatPhone, buildTelLink, buildWhatsAppLink, buildTelegramLink, buildMaxLink, buildWbLink,
@@ -120,11 +121,32 @@ function renderCard(product, hrefPrefix = 'tovar/') {
   </article>`;
 }
 
+// Open Graph — то, что видно, когда ссылку кидают в мессенджер или соцсеть.
+// Без него ВКонтакте и Telegram показывают голую строку адреса, а ВК вдобавок
+// не находит картинку для карточки. Адреса тут обязаны быть абсолютными:
+// относительный путь соцсеть не разрешит, ей неоткуда знать наш домен.
+function renderOpenGraph({ title, description, path: ogPath = '', image = '', type = 'website' }) {
+  const abs = (p) => `${SITE_URL}/${String(p).replace(/^\/+/, '')}`;
+  return [
+    `<meta property="og:type" content="${type}">`,
+    `<meta property="og:site_name" content="${SITE_NAME}">`,
+    `<meta property="og:locale" content="ru_RU">`,
+    `<meta property="og:title" content="${escapeHtml(title)}">`,
+    `<meta property="og:description" content="${escapeHtml(description)}">`,
+    `<meta property="og:url" content="${abs(ogPath)}">`,
+    ...(image ? [
+      `<meta property="og:image" content="${abs(image)}">`,
+      '<meta name="twitter:card" content="summary_large_image">',
+    ] : []),
+    `<link rel="canonical" href="${abs(ogPath)}">`,
+  ].join('\n');
+}
+
 // prefix — путь до корня сайта: '' для главной, '../../' для страницы товара.
 // Абсолютные пути нельзя: сайт живёт в подпапке GitHub Pages.
 // version — отпечаток содержимого стилей и скриптов. Без него браузер месяцами
 // держит старый style.css из кэша, и правки вёрстки не доезжают до людей.
-function pageShell({ title, description, body, prefix = '', scripts = [], version = '', current = '' }) {
+function pageShell({ title, description, body, prefix = '', scripts = [], version = '', current = '', og = {} }) {
   const v = version ? `?v=${version}` : '';
   return `<!doctype html>
 <html lang="ru">
@@ -133,6 +155,7 @@ function pageShell({ title, description, body, prefix = '', scripts = [], versio
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(description)}">
+${renderOpenGraph({ title, description, ...og })}
 <link rel="icon" href="${prefix}favicon.png${v}">${
   YANDEX_VERIFICATION ? `\n<meta name="yandex-verification" content="${YANDEX_VERIFICATION}">` : ''}${
   GOOGLE_VERIFICATION ? `\n<meta name="google-site-verification" content="${GOOGLE_VERIFICATION}">` : ''}
@@ -319,6 +342,10 @@ ${service.body}
     scripts: ['order-form.js'],
     version,
     current: SERVICES_INDEX.slug,
+    og: {
+      path: `${SERVICES_INDEX.slug}/${service.slug}/`,
+      image: service.photo && !service.photo.startsWith('http') ? `uslugi/${service.photo}` : '',
+    },
   });
 }
 
@@ -375,6 +402,7 @@ export function renderBlogIndex(version = '', now = new Date()) {
     prefix: '../',
     version,
     current: BLOG_INDEX.slug,
+    og: { path: `${BLOG_INDEX.slug}/` },
   });
 }
 
@@ -397,6 +425,11 @@ ${post.body}
     scripts: ['order-form.js'],
     version,
     current: BLOG_INDEX.slug,
+    og: {
+      type: 'article',
+      path: `${BLOG_INDEX.slug}/${post.slug}/`,
+      image: `${BLOG_INDEX.slug}/${post.slug}/1.jpg`,
+    },
   });
 }
 

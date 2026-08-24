@@ -11,7 +11,12 @@ const DZEN_TITLE_LIMIT = 140;
 test('published posts are those whose day has come, newest first', () => {
   const now = new Date('2026-08-27T00:00:00Z');
   const slugs = publishedPosts(now).map(p => p.slug);
-  assert.deepEqual(slugs, ['medalnica-dlya-gimnastki', 'tablichka-pereryv-do']);
+  assert.deepEqual(slugs, [
+    'podstavka-pod-telefon-partiya',
+    'chasy-sankt-peterburg',
+    'medalnica-dlya-gimnastki',
+    'tablichka-pereryv-do',
+  ]);
 });
 
 test('a post dated today is published in Moscow, not in UTC', () => {
@@ -73,6 +78,19 @@ test('post pages link to their services and back to the blog', () => {
   // Пути к картинкам относительные: сайт может жить в подпапке.
   assert.match(html, /src="1\.jpg"/);
   assert.doesNotMatch(html, /src="\/blog/);
+});
+
+test('a post page carries an absolute Open Graph image and url', () => {
+  // На этом держится карточка ВКонтакте: фотографии на стену групповому ключу
+  // класть нельзя, и картинка в посте берётся ровно отсюда. Относительный
+  // адрес не годится — соцсети неоткуда узнать наш домен.
+  const post = POSTS.find(p => p.slug === 'tablichka-pereryv-do');
+  const html = renderBlogPost(post, 'abc123');
+  assert.match(html, /<meta property="og:image" content="https:\/\/lazerklin\.ru\/blog\/tablichka-pereryv-do\/1\.jpg">/);
+  assert.match(html, /<meta property="og:url" content="https:\/\/lazerklin\.ru\/blog\/tablichka-pereryv-do\/">/);
+  assert.match(html, /<meta property="og:type" content="article">/);
+  assert.match(html, /<link rel="canonical" href="https:\/\/lazerklin\.ru\/blog\/tablichka-pereryv-do\/">/);
+  assert.doesNotMatch(html, /og:image" content="(?!https:)/);
 });
 
 test('the blog index lists published posts and hides the future ones', () => {
