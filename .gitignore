@@ -4,3 +4,4 @@ node_modules/
 .claude/
 video-inbox/
 video-inbox-state.json
+video-out/
