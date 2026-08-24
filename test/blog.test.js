@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { POSTS, BLOG_INDEX, publishedPosts } from '../src/blog.js';
 import { renderBlogIndex, renderBlogPost } from '../src/render.js';
+import { SERVICES } from '../src/services.js';
 
 const TG_CAPTION_LIMIT = 1024;
 const DZEN_TITLE_LIMIT = 140;
@@ -35,6 +36,18 @@ test('Telegram text fits the album caption and yields a sane Dzen title', () => 
     const first = post.tg.split('\n')[0];
     assert.ok(first.length <= DZEN_TITLE_LIMIT,
       `${post.slug}: первая фраза ${first.length} знаков, лимит ${DZEN_TITLE_LIMIT}`);
+  }
+});
+
+test('every post points at services that actually exist', () => {
+  // Опечатка в slug не ломает сборку: ссылка просто молча исчезает, а вместе с
+  // ней и половина смысла блога — довести человека до страницы, где заказывают.
+  const known = new Set(SERVICES.map(s => s.slug));
+  for (const post of POSTS) {
+    assert.ok(post.services?.length, `${post.slug}: не привязан ни к одной услуге`);
+    for (const slug of post.services) {
+      assert.ok(known.has(slug), `${post.slug}: услуги «${slug}» не существует`);
+    }
   }
 });
 
