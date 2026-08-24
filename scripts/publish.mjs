@@ -11,7 +11,7 @@
 
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { POSTS } from '../src/blog.js';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -70,11 +70,23 @@ async function publishToVk(post, url, token) {
 // иначе в Дзене её просто не будет.
 const TG_CAPTION_LIMIT = 1024;
 
-async function publishToTelegram(post, files, url, token, channel) {
-  const caption = `${post.tg}\n\n${url}`;
+// Ссылку добавляет публикатор, а не автор текста: она идёт с utm-метками и
+// съедает часть лимита. Тест меряет ровно эту строку — раньше он мерил один
+// post.tg и пропускал запись, которая падает уже при отправке.
+export function tgCaption(post, url) {
+  return `${post.tg}\n\n${url}`;
+}
+
+export function checkTgCaption(post, url) {
+  const caption = tgCaption(post, url);
   if (caption.length > TG_CAPTION_LIMIT) {
     throw new Error(`Telegram: подпись ${caption.length} знаков при лимите ${TG_CAPTION_LIMIT}`);
   }
+  return caption;
+}
+
+async function publishToTelegram(post, files, url, token, channel) {
+  const caption = checkTgCaption(post, url);
 
   const form = new FormData();
   const media = files.map((file, i) => ({
@@ -101,7 +113,7 @@ async function publishToTelegram(post, files, url, token, channel) {
 // выглядит как «прямой заход»), а ВКонтакте по адресу с меткой заново забирает
 // страницу вместо своей закэшированной версии. Канонический адрес в разметке
 // страницы остаётся чистым, так что поиску это ничем не грозит.
-const tagged = (url, source) => `${url}?utm_source=${source}&utm_medium=social`;
+export const tagged = (url, source) => `${url}?utm_source=${source}&utm_medium=social`;
 
 function moscowToday(now = new Date()) {
   return new Date(now.getTime() + 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -144,7 +156,12 @@ async function main() {
   const failures = [];
   for (const [key, name, send] of jobs) {
     if (done[key]) { log(`${name}: уже отправлено ${done[key]}, пропускаю`); continue; }
-    if (dryRun) { log(`${name}: отправил бы сейчас`); continue; }
+    if (dryRun) {
+      // Предпросмотр обязан спотыкаться о то же, обо что споткнётся отправка.
+      if (key === 'tg') checkTgCaption(post, tagged(url, 'telegram'));
+      log(`${name}: отправил бы сейчас`);
+      continue;
+    }
     try {
       const link = await send();
       done[key] = link;
@@ -163,7 +180,11 @@ async function main() {
   if (failures.length) throw new Error(failures.join('; '));
 }
 
-main().catch((err) => {
-  console.error(err.message);
-  process.exitCode = 1;
-});
+// Запуск только при прямом вызове: тест импортирует отсюда сборку подписи,
+// и импорт не должен ничего публиковать.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((err) => {
+    console.error(err.message);
+    process.exitCode = 1;
+  });
+}

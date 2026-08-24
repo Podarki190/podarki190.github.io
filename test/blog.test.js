@@ -5,6 +5,8 @@ import { POSTS, BLOG_INDEX, publishedPosts } from '../src/blog.js';
 import { renderBlogIndex, renderBlogPost } from '../src/render.js';
 import { SERVICES } from '../src/services.js';
 
+import { tgCaption, tagged } from '../scripts/publish.mjs';
+
 const TG_CAPTION_LIMIT = 1024;
 const DZEN_TITLE_LIMIT = 140;
 
@@ -36,8 +38,13 @@ test('every post carries three photos worth of alt text', () => {
 
 test('Telegram text fits the album caption and yields a sane Dzen title', () => {
   for (const post of POSTS) {
-    assert.ok(post.tg.length <= TG_CAPTION_LIMIT,
-      `${post.slug}: подпись ${post.tg.length} знаков, лимит ${TG_CAPTION_LIMIT}`);
+    // Меряем то, что реально уходит: публикатор дописывает ссылку с метками,
+    // а это ещё под сотню знаков. Голый post.tg проходил бы проверку у записи,
+    // которая падает уже при отправке — и терялась бы: выбор идёт по дате, и
+    // второй попытки у поста не будет.
+    const caption = tgCaption(post, tagged(`https://lazerklin.ru/blog/${post.slug}/`, 'telegram'));
+    assert.ok(caption.length <= TG_CAPTION_LIMIT,
+      `${post.slug}: подпись ${caption.length} знаков, лимит ${TG_CAPTION_LIMIT}`);
     // Дзен берёт заголовком первое предложение и не убирает его из тела —
     // длинная первая фраза даёт заголовок-простыню и заметный повтор.
     const first = post.tg.split('\n')[0];
@@ -130,4 +137,11 @@ test('the blog index lists published posts and hides the future ones', () => {
 test('the blog is reachable from the top navigation of any page', () => {
   const html = renderBlogIndex('abc123');
   assert.match(html, new RegExp(`href="\\.\\./${BLOG_INDEX.slug}/"`));
+});
+
+// Ссылка — дело публикатора. Вписанная в текст руками, она уедет в пост дважды
+// и съест лимит подписи, до которого у длинных записей и так недалеко.
+test('в текстах для Telegram нет ссылок — их ставит публикатор', () => {
+  const withLinks = POSTS.filter(p => /https?:\/\//.test(p.tg)).map(p => p.slug);
+  assert.deepEqual(withLinks, []);
 });
