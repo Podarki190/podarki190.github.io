@@ -16,6 +16,7 @@ test('published posts are those whose day has come, newest first', () => {
     'chasy-sankt-peterburg',
     'medalnica-dlya-gimnastki',
     'tablichka-pereryv-do',
+    'panno-mnogosloynoe',
   ]);
 });
 

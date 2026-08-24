@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderIndexPage, renderProductPage, renderStaticPage, escapeHtml } from '../src/render.js';
+import { renderIndexPage, renderProductPage, renderStaticPage, renderBlogPost, escapeHtml } from '../src/render.js';
 import { PAGES, captionFromFile } from '../src/pages.js';
 
 const product = {
@@ -250,4 +250,54 @@ test('a works photo caption comes from the file name, without the sort prefix', 
   assert.equal(captionFromFile('12 Медальница для гимнастки.jpg'), 'Медальница для гимнастки');
   assert.equal(captionFromFile('Часы-из-дуба.JPEG'), 'Часы из дуба');
   assert.equal(captionFromFile('kubok.webp'), 'kubok');
+});
+
+// Видео на странице. Поле необязательное: почти у всех постов его нет, и
+// страница без ролика не должна отличаться от той, что была до его появления.
+const withVideo = {
+  slug: 'panno-mnogosloynoe', date: '2026-08-24',
+  title: 'T', h1: 'H', description: 'D',
+  alts: ['а', 'б', 'в'], services: [], body: '<p>текст</p>',
+  video: {
+    oid: -106929053, id: 456239047,
+    name: 'Как делают многослойные картины из фанеры',
+    description: 'Панно из берёзовой фанеры',
+    thumb: 'video.jpg', duration: 'PT38S', uploadDate: '2026-08-24',
+  },
+};
+
+test('пост без видео не получает ни плеера, ни разметки', () => {
+  const { video, ...plain } = withVideo;
+  const html = renderBlogPost(plain);
+  assert.ok(!html.includes('video-wrap'));
+  assert.ok(!html.includes('application/ld+json'));
+});
+
+test('пост с видео встраивает плеер ВКонтакте', () => {
+  const html = renderBlogPost(withVideo);
+  assert.match(html, /video_ext\.php\?oid=-106929053&amp;id=456239047/);
+  assert.match(html, /class="video-wrap"/);
+});
+
+test('видео описано разметкой VideoObject с абсолютными адресами', () => {
+  const html = renderBlogPost(withVideo);
+  const ld = html.match(/<script type="application\/ld\+json">(.*?)<\/script>/s);
+  const data = JSON.parse(ld[1]);
+  assert.equal(data['@type'], 'VideoObject');
+  assert.equal(data.duration, 'PT38S');
+  assert.equal(data.thumbnailUrl, 'https://lazerklin.ru/blog/panno-mnogosloynoe/video.jpg');
+  assert.equal(data.contentUrl, 'https://vkvideo.ru/clip-106929053_456239047');
+});
+
+// Описание пишет человек, и однажды в нём окажется угловая скобка. Без
+// экранирования закрывающий тег внутри данных обрывает <script> посреди JSON,
+// и страница ниже этого места разъезжается.
+test('угловые скобки в описании не рвут блок разметки', () => {
+  const html = renderBlogPost({
+    ...withVideo,
+    video: { ...withVideo.video, description: 'Панно </script><b>подстава</b>' },
+  });
+  assert.ok(!html.includes('</script><b>подстава</b>'));
+  const ld = html.match(/<script type="application\/ld\+json">(.*?)<\/script>/s);
+  assert.equal(JSON.parse(ld[1]).description, 'Панно </script><b>подстава</b>');
 });

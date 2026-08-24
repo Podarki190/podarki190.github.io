@@ -146,7 +146,7 @@ function renderOpenGraph({ title, description, path: ogPath = '', image = '', ty
 // Абсолютные пути нельзя: сайт живёт в подпапке GitHub Pages.
 // version — отпечаток содержимого стилей и скриптов. Без него браузер месяцами
 // держит старый style.css из кэша, и правки вёрстки не доезжают до людей.
-function pageShell({ title, description, body, prefix = '', scripts = [], version = '', current = '', og = {} }) {
+function pageShell({ title, description, body, prefix = '', scripts = [], version = '', current = '', og = {}, head = '' }) {
   const v = version ? `?v=${version}` : '';
   return `<!doctype html>
 <html lang="ru">
@@ -159,7 +159,8 @@ ${renderOpenGraph({ title, description, ...og })}
 <link rel="icon" href="${prefix}favicon.png${v}">${
   YANDEX_VERIFICATION ? `\n<meta name="yandex-verification" content="${YANDEX_VERIFICATION}">` : ''}${
   GOOGLE_VERIFICATION ? `\n<meta name="google-site-verification" content="${GOOGLE_VERIFICATION}">` : ''}
-<link rel="stylesheet" href="${prefix}style.css${v}">
+<link rel="stylesheet" href="${prefix}style.css${v}">${head ? `
+${head}` : ''}
 </head>
 <body>
 ${renderHeader(prefix, current)}
@@ -334,6 +335,7 @@ export function renderServicePage(service, version = '') {
     body: `<article class="page">
   <h1>${escapeHtml(service.title)}</h1>
   ${service.photo ? `<img class="service-photo${service.photo.startsWith('http') ? ' tall' : ''}" src="${servicePhotoSrc(service, '../../')}" alt="${escapeHtml(service.nav)} — мастерская «Лазер Клин» в Клину" loading="lazy">` : ''}
+  ${renderVideo(service.video)}
 ${service.body}
   ${renderRequestForm(service.nav)}
   <p class="service-back"><a href="../">← Все услуги мастерской</a></p>
@@ -346,6 +348,7 @@ ${service.body}
       path: `${SERVICES_INDEX.slug}/${service.slug}/`,
       image: service.photo && !service.photo.startsWith('http') ? `uslugi/${service.photo}` : '',
     },
+    head: videoJsonLd(service.video, `uslugi/${service.video?.thumb}`),
   });
 }
 
@@ -406,6 +409,44 @@ export function renderBlogIndex(version = '', now = new Date()) {
   });
 }
 
+// Видео храним не у себя. GitHub Pages отдаёт mp4 одним куском, без адаптивного
+// качества: ролик на 16 МБ с телефона выкачивается целиком, даже если человек
+// посмотрел три секунды. ВКонтакте отдаёт свой плеер, считает просмотры и
+// открывается в России без оговорок.
+//
+// Ролики вертикальные (9:16) — их снимают для лент. Поэтому ширина ограничена:
+// растянутая на всю колонку вертикаль выдавливает текст статьи за экран.
+function renderVideo(video) {
+  if (!video) return '';
+  const src = `https://vk.com/video_ext.php?oid=${video.oid}&id=${video.id}&hd=2`;
+  return `<div class="video-wrap">
+    <iframe src="${escapeHtml(src)}" title="${escapeHtml(video.name)}" loading="lazy"
+      allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe>
+  </div>`;
+}
+
+// Без VideoObject поисковик встроенного ролика не видит вообще: для него это
+// пустой iframe. С разметкой Яндекс и Google ставят рядом со ссылкой миниатюру
+// с длительностью, и строка в выдаче перестаёт быть просто строкой.
+function videoJsonLd(video, thumbPath) {
+  if (!video) return '';
+  const abs = (p) => `${SITE_URL}/${String(p).replace(/^\/+/, '')}`;
+  const data = {
+    '@context': 'https://schema.org',
+    '@type': 'VideoObject',
+    name: video.name,
+    description: video.description,
+    thumbnailUrl: abs(thumbPath),
+    uploadDate: video.uploadDate,
+    duration: video.duration,
+    embedUrl: `https://vk.com/video_ext.php?oid=${video.oid}&id=${video.id}`,
+    contentUrl: `https://vkvideo.ru/clip${video.oid}_${video.id}`,
+  };
+  // Закрывающий тег внутри строки оборвал бы <script> прямо посреди данных.
+  const json = JSON.stringify(data).replace(/</g, '\\u003c');
+  return `<script type="application/ld+json">${json}</script>`;
+}
+
 export function renderBlogPost(post, version = '') {
   return pageShell({
     title: post.title,
@@ -414,6 +455,7 @@ export function renderBlogPost(post, version = '') {
   <h1>${escapeHtml(post.h1)}</h1>
   <p class="post-date">${formatPostDate(post.date)}</p>
   ${renderPostPhoto(post, 0)}
+  ${renderVideo(post.video)}
 ${post.body}
   ${renderPostPhoto(post, 1)}
   ${renderPostPhoto(post, 2)}
@@ -433,6 +475,7 @@ ${post.body}
       // «link_photo_sizing_rule. No photo given».
       image: `${BLOG_INDEX.slug}/${post.slug}/og.jpg`,
     },
+    head: videoJsonLd(post.video, `${BLOG_INDEX.slug}/${post.slug}/${post.video?.thumb}`),
   });
 }
 

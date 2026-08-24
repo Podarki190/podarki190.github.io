@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { buildSite } from '../src/build.js';
+import { buildSite, postAssets } from '../src/build.js';
+import { POSTS } from '../src/blog.js';
 import { PAGES } from '../src/pages.js';
 import { publishedPosts } from '../src/blog.js';
 
@@ -97,4 +98,25 @@ test('buildSite refuses to build an empty catalog instead of publishing a blank 
   );
 
   await rm(outDir, { recursive: true, force: true });
+});
+
+// Миниатюра ролика должна попасть в сборку вместе со снимками: без файла
+// разметка VideoObject ссылается в пустоту, и поисковик её игнорирует.
+test('в сборку записи попадает миниатюра ролика, если он есть', () => {
+  const base = { alts: ['а', 'б', 'в'] };
+  assert.deepEqual(postAssets(base), ['1.jpg', '2.jpg', '3.jpg', 'og.jpg']);
+  assert.deepEqual(
+    postAssets({ ...base, video: { thumb: 'video.jpg' } }),
+    ['1.jpg', '2.jpg', '3.jpg', 'og.jpg', 'video.jpg'],
+  );
+});
+
+// Файл должен и правда лежать на диске: список без картинки уронит сборку.
+test('у каждой записи с роликом миниатюра есть на диске', async () => {
+  const { access } = await import('node:fs/promises');
+  for (const post of POSTS.filter(p => p.video)) {
+    for (const name of postAssets(post)) {
+      await access(new URL(`../static/blog/${post.slug}/${name}`, import.meta.url));
+    }
+  }
 });

@@ -248,6 +248,13 @@ a { color: var(--brass-deep); }
 .services-jump { margin: 0 0 2rem; }
 .service-card p { margin: 0 0.8rem 0.9rem; font-size: 0.88rem; color: var(--ink-muted); }
 .service-photo { width: 100%; max-width: 620px; border-radius: 10px; margin: 0.5rem 0 1rem; }
+/* Ролики вертикальные — их снимают для лент. На всю ширину колонки такая
+   врезка занимает весь экран и текст статьи уезжает под сгиб. */
+.video-wrap { max-width: 360px; margin: 0.5rem 0 1.25rem; }
+.video-wrap iframe {
+  display: block; width: 100%; aspect-ratio: 9 / 16;
+  border: 0; border-radius: 10px; background: var(--surface);
+}
 .service-cta {
   border: 1px dashed var(--brass); border-radius: 10px; padding: 0.8rem 1rem;
   background: var(--surface); margin-top: 1.5rem;

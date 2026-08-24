@@ -24,6 +24,18 @@ async function assetVersion(sources) {
   return hash.digest('hex').slice(0, 8);
 }
 
+// Снимки записи, обложка для соцсетей и — если у записи есть ролик — его
+// миниатюра. Вынесено из цикла и экспортировано ради теста: миниатюру забыли
+// в первой версии, страница собиралась без ошибки, а thumbnailUrl в разметке
+// отдавал 404 и поисковик молча выбрасывал весь VideoObject.
+export function postAssets(post) {
+  return [
+    ...post.alts.map((_, i) => `${i + 1}.jpg`),
+    'og.jpg',
+    ...(post.video?.thumb ? [post.video.thumb] : []),
+  ];
+}
+
 export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
   const products = assignSlugs(await fetchAllClockProducts(wbToken, { fetchFn }));
 
@@ -101,8 +113,7 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
     const postDir = path.join(blogDir, post.slug);
     await mkdir(postDir, { recursive: true });
     await writeFile(path.join(postDir, 'index.html'), renderBlogPost(post, version));
-    // og.jpg — обложка для соцсетей, лежит рядом со снимками записи.
-    for (const name of [...post.alts.map((_, i) => `${i + 1}.jpg`), 'og.jpg']) {
+    for (const name of postAssets(post)) {
       await copyFile(
         new URL(`../static/blog/${post.slug}/${name}`, import.meta.url),
         path.join(postDir, name),
