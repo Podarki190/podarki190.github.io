@@ -35,24 +35,28 @@ async function vk(method, params, token) {
   return data.response;
 }
 
-// Фотографий здесь нет и быть не может — это проверено, а не предположено.
-// Групповому ключу закрыты и photos.getWallUploadServer, и photos.saveWallPhoto
-// (обе — ошибка 27). Открыт photos.getMessagesUploadServer, но фото из скрытого
-// альбома сообщений стена молча выбрасывает: запись создаётся, вложения в ней
-// нет. С access_key — то же самое. Токен пользователя эту дверь открыл бы, но
-// у приложения типа «мини-приложение» нет права offline, и такой токен живёт
-// сутки — для ночной задачи бесполезен.
+// ВКонтакте получает только текст, и это не упрощение, а потолок группового
+// ключа. Проверено по очереди, всё упирается в ошибку 27:
+//   photos.getWallUploadServer, photos.saveWallPhoto — закрыты;
+//   photos.getMessagesUploadServer открыт, но фото из скрытого альбома стена
+//   молча выбрасывает — и с access_key тоже;
+//   ссылка вложением даёт «link_photo_sizing_rule. No photo given», причём на
+//   любой ссылке, хоть на Хабре: группе нечем приложить картинку к сниппету.
+// Работает единственное — ссылка внутри текста, без вложения. Карточку ВК на
+// неё не рисует, так что ссылка должна быть объяснена словами, иначе выглядит
+// обрубком.
 //
-// Поэтому вложение — ссылка на статью, а карточку с картинкой ВК строит сам из
-// og:image. Одна фотография вместо трёх, зато без ручной работы. Ссылка при
-// этом обязана быть в записи, а не в комментарии: комментарий не даёт картинки,
-// а запись без картинки в ленте не замечают вовсе.
+// Токен пользователя открыл бы всё это, но у приложения типа «мини-приложение»
+// нет права offline: токен пришлось бы обновлять при каждом запуске и хранить
+// обновлённый — то есть завести ключ с правом переписывать секреты репозитория.
+// Ради картинок в одной соцсети это плохой размен, решено оставить текст.
+const VK_PHOTO_LINE = 'Фотографии этой работы, размеры и сроки — на сайте:';
+
 async function publishToVk(post, url, token) {
   const { post_id: postId } = await vk('wall.post', {
     owner_id: -VK_GROUP_ID,
     from_group: 1,
-    message: post.vk,
-    attachments: url,
+    message: `${post.vk}\n\n${VK_PHOTO_LINE}\n${url}`,
   }, token);
 
   return `https://vk.com/wall-${VK_GROUP_ID}_${postId}`;
@@ -92,6 +96,13 @@ async function publishToTelegram(post, files, url, token, channel) {
 
 // ── Что публикуем ────────────────────────────────────────────────────────────
 
+// Метка источника в адресе. Нужна дважды: Метрика показывает, какая площадка
+// реально приводит людей (Telegram чаще всего приходит без реферера и иначе
+// выглядит как «прямой заход»), а ВКонтакте по адресу с меткой заново забирает
+// страницу вместо своей закэшированной версии. Канонический адрес в разметке
+// страницы остаётся чистым, так что поиску это ничем не грозит.
+const tagged = (url, source) => `${url}?utm_source=${source}&utm_medium=social`;
+
 function moscowToday(now = new Date()) {
   return new Date(now.getTime() + 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
@@ -123,8 +134,8 @@ async function main() {
 
   const channel = process.env.TELEGRAM_CHANNEL || '@lazerklin_ru';
   const jobs = [
-    ['tg', 'Telegram', () => publishToTelegram(post, files, url, process.env.TELEGRAM_BOT_TOKEN, channel)],
-    ['vk', 'ВКонтакте', () => publishToVk(post, url, process.env.VK_GROUP_TOKEN)],
+    ['tg', 'Telegram', () => publishToTelegram(post, files, tagged(url, 'telegram'), process.env.TELEGRAM_BOT_TOKEN, channel)],
+    ['vk', 'ВКонтакте', () => publishToVk(post, tagged(url, 'vk'), process.env.VK_GROUP_TOKEN)],
   ];
 
   // Площадки независимы: если упал Telegram, ВК всё равно должен выйти, а
