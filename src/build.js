@@ -101,10 +101,11 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
     const postDir = path.join(blogDir, post.slug);
     await mkdir(postDir, { recursive: true });
     await writeFile(path.join(postDir, 'index.html'), renderBlogPost(post, version));
-    for (let i = 1; i <= post.alts.length; i += 1) {
+    // og.jpg — обложка для соцсетей, лежит рядом со снимками записи.
+    for (const name of [...post.alts.map((_, i) => `${i + 1}.jpg`), 'og.jpg']) {
       await copyFile(
-        new URL(`../static/blog/${post.slug}/${i}.jpg`, import.meta.url),
-        path.join(postDir, `${i}.jpg`),
+        new URL(`../static/blog/${post.slug}/${name}`, import.meta.url),
+        path.join(postDir, name),
       );
     }
   }

@@ -428,7 +428,10 @@ ${post.body}
     og: {
       type: 'article',
       path: `${BLOG_INDEX.slug}/${post.slug}/`,
-      image: `${BLOG_INDEX.slug}/${post.slug}/1.jpg`,
+      // Отдельная горизонтальная обложка, а не первый снимок: ВКонтакте
+      // отказывается строить карточку по вертикальной картинке и отвечает
+      // «link_photo_sizing_rule. No photo given».
+      image: `${BLOG_INDEX.slug}/${post.slug}/og.jpg`,
     },
   });
 }

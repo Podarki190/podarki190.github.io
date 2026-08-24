@@ -50,9 +50,11 @@ test('photos exist for every post, including the ones still waiting', () => {
   // записи на две недели вперёд молча пройдёт все проверки, а потом уронит
   // ночную сборку в свой день — и сайт останется без обновления.
   for (const post of POSTS) {
-    for (let i = 1; i <= post.alts.length; i += 1) {
-      const file = new URL(`../static/blog/${post.slug}/${i}.jpg`, import.meta.url);
-      assert.ok(existsSync(file), `${post.slug}: нет файла ${i}.jpg`);
+    // og.jpg проверяем наравне со снимками: без него ВКонтакте не построит
+    // карточку, а это единственная картинка, которую там увидят.
+    for (const name of [...post.alts.map((_, i) => `${i + 1}.jpg`), 'og.jpg']) {
+      const file = new URL(`../static/blog/${post.slug}/${name}`, import.meta.url);
+      assert.ok(existsSync(file), `${post.slug}: нет файла ${name}`);
     }
   }
 });
@@ -86,7 +88,7 @@ test('a post page carries an absolute Open Graph image and url', () => {
   // адрес не годится — соцсети неоткуда узнать наш домен.
   const post = POSTS.find(p => p.slug === 'tablichka-pereryv-do');
   const html = renderBlogPost(post, 'abc123');
-  assert.match(html, /<meta property="og:image" content="https:\/\/lazerklin\.ru\/blog\/tablichka-pereryv-do\/1\.jpg">/);
+  assert.match(html, /<meta property="og:image" content="https:\/\/lazerklin\.ru\/blog\/tablichka-pereryv-do\/og\.jpg">/);
   assert.match(html, /<meta property="og:url" content="https:\/\/lazerklin\.ru\/blog\/tablichka-pereryv-do\/">/);
   assert.match(html, /<meta property="og:type" content="article">/);
   assert.match(html, /<link rel="canonical" href="https:\/\/lazerklin\.ru\/blog\/tablichka-pereryv-do\/">/);
