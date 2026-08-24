@@ -168,7 +168,7 @@ async function main() {
         prev = label;
         offset += segDur(cuts[i]) - dissolve;
       }
-      video += `[x]fade=t=in:d=0.6,fade=t=out:st=${(totalDur - 0.8).toFixed(2)}:d=0.8[v];`;
+      video += `[x]fade=t=in:d=0.6,fade=t=out:st=${(totalDur - 0.8).toFixed(2)}:d=0.8,format=yuv420p[v];`;
     } else {
       video += `${cuts.map((_, i) => `[c${i}]`).join('')}concat=n=${cuts.length}:v=1:a=0,`
         + `fade=t=out:st=${(totalDur - 0.4).toFixed(2)}:d=0.4,format=yuv420p[v];`;
@@ -185,6 +185,10 @@ async function main() {
       + `afade=t=out:st=${(totalDur - FADE_OUT).toFixed(2)}:d=${FADE_OUT}[a]`,
     '-map', '[v]', '-map', '[a]', '-t', String(totalDur.toFixed(2)), '-r', '30',
     '-c:v', 'libx264', '-preset', 'medium', '-crf', '23', '-movflags', '+faststart',
+    // Без этого одной забытой строки в цепочке фильтров хватает, чтобы на выходе
+    // получился H.264 4:4:4 — файл, который не открывает ни проигрыватель
+    // Windows, ни телефон. Уже случилось однажды, больше не должно.
+    '-pix_fmt', 'yuv420p', '-profile:v', 'high', '-level', '4.0',
     '-c:a', 'aac', '-b:a', '128k', '-ar', '44100',
     out, '-y',
   ];
@@ -201,7 +205,16 @@ async function main() {
 
   const size = (await stat(out)).size;
   const [w, h] = (await probe(out, 'stream=width,height')).map(Number);
-  console.log(`готово   : ${path.basename(out)} — ${w}x${h}, ${(size / 1024 / 1024).toFixed(1)} МБ`);
+
+  // Такой брак не виден ничем, кроме попытки открыть файл: он декодируется без
+  // единой ошибки и выглядит исправным в любой проверке. Узнавать о нём от
+  // человека, который просто дважды щёлкнул по ролику, — худший способ.
+  const [pixFmt] = await probe(out, 'stream=pix_fmt');
+  if (pixFmt !== 'yuv420p') {
+    throw new Error(`на выходе ${pixFmt} вместо yuv420p — такой файл не откроется у людей`);
+  }
+
+  console.log(`готово   : ${path.basename(out)} — ${w}x${h}, ${(size / 1024 / 1024).toFixed(1)} МБ, ${pixFmt}`);
 }
 
 main().catch((err) => {
