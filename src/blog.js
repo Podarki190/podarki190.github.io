@@ -38,7 +38,7 @@ export const POSTS = [
       'Руки прикладывают многослойное панно с горным пейзажем к стене',
       'Мастер вешает готовое многослойное панно на стену рядом с другими работами',
     ],
-    services: ['mnogosloynye-panno', 'gravirovka-po-derevu'],
+    services: ['kartiny', 'gravirovka-po-derevu'],
     video: {
       oid: -106929053,
       id: 456239047,

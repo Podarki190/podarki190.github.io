@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { renderIndexPage, renderProductPage, renderStaticPage, renderBlogPost, escapeHtml } from '../src/render.js';
 import { PAGES, captionFromFile } from '../src/pages.js';
+import { SERVICES, SERVICE_GROUPS } from '../src/services.js';
 
 const product = {
   nmId: 1259100136,
@@ -300,4 +301,20 @@ test('угловые скобки в описании не рвут блок р�
   assert.ok(!html.includes('</script><b>подстава</b>'));
   const ld = html.match(/<script type="application\/ld\+json">(.*?)<\/script>/s);
   assert.equal(JSON.parse(ld[1]).description, 'Панно </script><b>подстава</b>');
+});
+
+// Список услуг строится из SERVICE_GROUPS, а не из SERVICES напрямую. Услуга,
+// забытая в группах, получает живую страницу и строчку в карте сайта, но из
+// навигации на неё не попасть — сирота, которую никто не заметит. Один раз так
+// уже вышло.
+test('каждая услуга попала хотя бы в одну группу списка', () => {
+  const grouped = new Set(SERVICE_GROUPS.flatMap(g => g.slugs));
+  assert.deepEqual(SERVICES.filter(s => !grouped.has(s.slug)).map(s => s.slug), []);
+});
+
+// И наоборот: группа, ссылающаяся на несуществующий слуг, молча теряет карточку.
+test('в группах нет ссылок на несуществующие услуги', () => {
+  const known = new Set(SERVICES.map(s => s.slug));
+  const broken = SERVICE_GROUPS.flatMap(g => g.slugs).filter(slug => !known.has(slug));
+  assert.deepEqual(broken, []);
 });
