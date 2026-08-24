@@ -1,0 +1,6 @@
+Обложка для соцсетей (og.jpg) по умолчанию делается из 1.jpg.
+Там, где на первом кадре товар мелковат, источник задан вручную.
+
+Пересобирать все обложки так — иначе ручной выбор затрётся:
+
+  python scripts/ogimage.py static/blog tablichka-pereryv-do=3 podstavka-pod-telefon-partiya=2
