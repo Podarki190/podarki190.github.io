@@ -18,6 +18,12 @@ export const TELEGRAM = 'Podarki190';
 // в личку пишут заказ, на канал подписываются. Канал ещё и кормит Дзен через
 // zen_sync_bot, поэтому подменять его личкой нельзя.
 export const TELEGRAM_CHANNEL = 'lazerklin_ru';
+
+// Дзен и Одноклассники наполняются сами: пост из Telegram уезжает в Дзен
+// кросспостингом, а Дзен переносит его в свою группу в ОК. Аккаунт в ОК для
+// этого не нужен — только чтобы отвечать на комментарии.
+export const DZEN_LINK = 'https://dzen.ru/id/6a8b685408d24016851e3e2c';
+export const OK_LINK = 'https://ok.ru/group/70000055512925';
 // Подтверждение прав на сайт в вебмастерах и счётчик Метрики. Пусто — значит
 // ничего лишнего в страницы не попадает; заполняется после регистрации.
 export const YANDEX_VERIFICATION = '647c4b8adf060779';
@@ -115,6 +121,8 @@ export function truncate(text, maxLen) {
 export const SOCIALS = [
   { id: 'vk', label: 'ВКонтакте', note: 'работы, статьи и живые отзывы', href: VK_LINK },
   { id: 'tg', label: 'Telegram', note: 'работы и новости мастерской', href: `https://t.me/${TELEGRAM_CHANNEL}` },
+  { id: 'dzen', label: 'Дзен', note: 'статьи о работах мастерской', href: DZEN_LINK },
+  { id: 'ok', label: 'Одноклассники', note: 'те же работы и новости', href: OK_LINK },
   { id: 'wa', label: 'WhatsApp', note: formatPhone(PHONE), href: `https://wa.me/${PHONE.replace('+', '')}` },
   { id: 'max', label: 'Макс', note: formatPhone(PHONE), href: MAX_LINK },
 ];

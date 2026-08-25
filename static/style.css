@@ -324,6 +324,8 @@ a { color: var(--brass-deep); }
 .social-tg .social-icon { color: #2AABEE; }
 .social-wa .social-icon { color: #25D366; }
 .social-max .social-icon { color: var(--brass); }
+.social-dzen .social-icon { color: var(--ink); }
+.social-ok .social-icon { color: #EE8208; }
 .social-text { display: flex; flex-direction: column; }
 .social-text small { font-size: 0.78rem; opacity: .75; }
 .socials-wide { gap: 0.6rem; margin: 0.8rem 0 1rem; }
