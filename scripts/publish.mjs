@@ -144,6 +144,18 @@ async function main() {
   log(`пост дня: ${post.slug}`);
   log(`ссылка: ${url}`);
 
+  // Статья должна уже стоять на сайте: пост уводит на неё, и ссылка в никуда
+  // хуже отсутствия поста. Порядок задан расписанием — сборка ночью, раздача
+  // утром, — но GitHub откладывает запуски по расписанию на часы, и полагаться
+  // на порядок времени нельзя. Проверяем сам факт, а не время.
+  if (!dryRun) {
+    const page = await fetch(url, { redirect: 'follow' }).catch(() => null);
+    if (!page?.ok) {
+      throw new Error(`статья ещё не выложена (${page ? page.status : 'нет ответа'}) — `
+        + 'жду следующего захода, чтобы не публиковать ссылку в никуда');
+    }
+  }
+
   const channel = process.env.TELEGRAM_CHANNEL || '@lazerklin_ru';
   const jobs = [
     ['tg', 'Telegram', () => publishToTelegram(post, files, tagged(url, 'telegram'), process.env.TELEGRAM_BOT_TOKEN, channel)],
