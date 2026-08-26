@@ -4,6 +4,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { fetchAllClockProducts } from './wbCatalog.js';
 import { assignSlugs, } from './slug.js';
+import { isBlocked } from './blocked.js';
 import { isMug } from './wbCatalog.js';
 import {
   renderIndexPage, renderProductPage, renderStaticPage,
@@ -37,7 +38,15 @@ export function postAssets(post) {
 }
 
 export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
-  const products = assignSlugs(await fetchAllClockProducts(wbToken, { fetchFn }));
+  // Снятое по правам отсеиваем ДО всего остального: страниц, карты сайта и тем
+  // быть не должно нигде. WB отдаёт удалённую карточку ещё до тридцати дней,
+  // ждать столько со своим сайтом нельзя.
+  const fetched = await fetchAllClockProducts(wbToken, { fetchFn });
+  const allowed = fetched.filter(p => !isBlocked(p));
+  if (allowed.length < fetched.length) {
+    console.log(`снято по правам: ${fetched.length - allowed.length} товаров`);
+  }
+  const products = assignSlugs(allowed);
 
   // Пустой каталог = сломанный API, а не «товары кончились». Лучше упасть и
   // оставить опубликованной предыдущую версию сайта, чем выложить пустую витрину.

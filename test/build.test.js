@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { buildSite, postAssets } from '../src/build.js';
 import { POSTS } from '../src/blog.js';
+import { isBlocked } from '../src/blocked.js';
 import { PAGES } from '../src/pages.js';
 import { publishedPosts } from '../src/blog.js';
 
@@ -119,4 +120,20 @@ test('у каждой записи с роликом миниатюра есть
       await access(new URL(`../static/blog/${post.slug}/${name}`, import.meta.url));
     }
   }
+});
+
+// Снятое по правам не должно попадать на сайт ни при каких условиях: WB отдаёт
+// удалённую карточку ещё до тридцати дней, и всё это время сайт торговал бы
+// тем, по чему уже пришла претензия.
+test('заблокированные товары отсеиваются по артикулу и по слову', () => {
+  assert.equal(isBlocked({ nmId: 1261323234, name: 'Часы настенные "КХЛ"' }), true);
+  assert.equal(isBlocked({ nmId: 265001652, name: 'Настенные часы Король Лев' }), true);
+  assert.equal(isBlocked({ nmId: 999, name: 'Настенные часы с группой Пикник' }), true);
+  assert.equal(isBlocked({ nmId: 999, name: 'Настенные часы Lumen, Люмен' }), true);
+  assert.equal(isBlocked({ nmId: 999, name: 'Настенные часы с лесом' }), false);
+});
+
+// Слово должно ловиться в любом регистре: названия на WB пишут как придётся.
+test('блокировка по слову не зависит от регистра', () => {
+  assert.equal(isBlocked({ nmId: 1, name: 'НАСТЕННЫЕ ЧАСЫ ГРУППА ЭПИДЕМИЯ' }), true);
 });
