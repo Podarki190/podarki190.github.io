@@ -130,7 +130,10 @@ test('заблокированные товары отсеиваются по а
   assert.equal(isBlocked({ nmId: 265001652, name: 'Настенные часы Король Лев' }), true);
   assert.equal(isBlocked({ nmId: 999, name: 'Настенные часы с группой Пикник' }), true);
   assert.equal(isBlocked({ nmId: 999, name: 'Настенные часы Lumen, Люмен' }), true);
+  assert.equal(isBlocked({ nmId: 999, name: 'Настенные часы с изображением Камаза' }), true);
   assert.equal(isBlocked({ nmId: 999, name: 'Настенные часы с лесом' }), false);
+  // Звери сняты не были — блокировать их нельзя.
+  assert.equal(isBlocked({ nmId: 999, name: 'Настенные часы с группой Звери' }), false);
 });
 
 // Слово должно ловиться в любом регистре: названия на WB пишут как придётся.
