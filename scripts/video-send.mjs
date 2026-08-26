@@ -21,6 +21,16 @@ const TG_UPLOAD_LIMIT = 50 * 1024 * 1024;
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const channel = process.env.TELEGRAM_CHANNEL || '@lazerklin_ru';
 
+// --to-me отправляет готовый ролик не в канал, а обратно тому, кто прислал
+// исходник. Посмотреть с телефона проще, чем идти к компьютеру, а бот умеет
+// писать только тем, кто написал ему первым, — поэтому чат и запоминается.
+async function target() {
+  if (!process.argv.includes('--to-me')) return channel;
+  const state = JSON.parse(await readFile(new URL('../video-inbox-state.json', import.meta.url), 'utf8'));
+  if (!state.chatId) throw new Error('чат неизвестен: напишите боту любое слово и запустите video-inbox.mjs');
+  return String(state.chatId);
+}
+
 function arg(name, fallback = null) {
   const i = process.argv.indexOf(`--${name}`);
   return i > -1 ? process.argv[i + 1] : fallback;
@@ -53,7 +63,7 @@ async function main() {
   }
 
   const form = new FormData();
-  form.append('chat_id', channel);
+  form.append('chat_id', await target());
   form.append('caption', caption);
   // supports_streaming — ролик начинает играть до полной загрузки; без него
   // в ленте он выглядит как файл, который надо сначала скачать.
@@ -63,7 +73,9 @@ async function main() {
   const res = await (await fetch(`https://api.telegram.org/bot${token}/sendVideo`,
     { method: 'POST', body: form })).json();
   if (!res.ok) throw new Error(`Telegram: ${res.description}`);
-  console.log(`отправлено: https://t.me/${channel.replace('@', '')}/${res.result.message_id}`);
+  console.log(process.argv.includes('--to-me')
+    ? 'отправлено вам в личку боту'
+    : `отправлено: https://t.me/${channel.replace('@', '')}/${res.result.message_id}`);
 }
 
 main().catch((err) => {
