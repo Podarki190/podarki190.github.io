@@ -5,3 +5,4 @@ node_modules/
 video-inbox/
 video-inbox-state.json
 video-out/
+logs/
