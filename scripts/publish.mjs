@@ -9,6 +9,7 @@
 //
 // Прогон без отправки: node scripts/publish.mjs --dry-run
 
+import { setDefaultResultOrder } from 'node:dns';
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -21,6 +22,32 @@ const VK_GROUP_ID = 106929053;
 const VK_API = 'https://api.vk.com/method';
 const VK_VERSION = '5.199';
 
+// Node по умолчанию пробует IPv6 первым, а до Telegram он отсюда не доходит:
+// каждый запрос молча ждал десять секунд и падал по таймауту, хотя IPv4 рядом
+// отвечает сразу. Одна строка снимает половину сетевых отказов.
+setDefaultResultOrder('ipv4first');
+
+// Вторая половина — просто плохая связь. Отправка альбома из трёх фотографий
+// рвётся чаще, чем короткий запрос, а второй попытки у поста нет: выбор идёт по
+// дате, и назавтра публикатор возьмётся за следующий. Поэтому повторы здесь, а
+// не «перезапустите вручную».
+async function withRetries(what, attempts = 4) {
+  let last;
+  for (let i = 1; i <= attempts; i += 1) {
+    try {
+      return await what();
+    } catch (err) {
+      last = err;
+      const reason = err.cause?.message ?? err.message;
+      if (i < attempts) {
+        console.error(`  попытка ${i} не удалась (${reason}), пробую снова`);
+        await new Promise(r => setTimeout(r, 2000 * i));
+      }
+    }
+  }
+  throw last;
+}
+
 const dryRun = process.argv.includes('--dry-run');
 const log = (...args) => console.log(dryRun ? '[вхолостую]' : '[публикация]', ...args);
 
@@ -28,7 +55,7 @@ const log = (...args) => console.log(dryRun ? '[вхолостую]' : '[пуб�
 
 async function vk(method, params, token) {
   const query = new URLSearchParams({ ...params, v: VK_VERSION, access_token: token });
-  const data = await (await fetch(`${VK_API}/${method}?${query}`)).json();
+  const data = await withRetries(async () => (await fetch(`${VK_API}/${method}?${query}`)).json());
   if (data.error) {
     throw new Error(`ВК ${method}: ${data.error.error_msg} (код ${data.error.error_code})`);
   }
@@ -100,8 +127,8 @@ async function publishToTelegram(post, files, url, token, channel) {
     form.append(`photo${i}`, new Blob([await readFile(file)], { type: 'image/jpeg' }), `${i + 1}.jpg`);
   }
 
-  const res = await (await fetch(`https://api.telegram.org/bot${token}/sendMediaGroup`,
-    { method: 'POST', body: form })).json();
+  const res = await withRetries(async () => (await fetch(
+    `https://api.telegram.org/bot${token}/sendMediaGroup`, { method: 'POST', body: form })).json());
   if (!res.ok) throw new Error(`Telegram: ${res.description}`);
   return `https://t.me/${channel.replace('@', '')}/${res.result[0].message_id}`;
 }
