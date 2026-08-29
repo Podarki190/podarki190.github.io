@@ -5,7 +5,7 @@ import { POSTS, BLOG_INDEX, publishedPosts } from '../src/blog.js';
 import { renderBlogIndex, renderBlogPost } from '../src/render.js';
 import { SERVICES } from '../src/services.js';
 
-import { tgCaption, tagged } from '../scripts/publish.mjs';
+import { tgCaption, tagged, pickPost } from '../scripts/publish.mjs';
 
 const TG_CAPTION_LIMIT = 1024;
 const DZEN_TITLE_LIMIT = 140;
@@ -144,4 +144,45 @@ test('the blog is reachable from the top navigation of any page', () => {
 test('в текстах для Telegram нет ссылок — их ставит публикатор', () => {
   const withLinks = POSTS.filter(p => /https?:\/\//.test(p.tg)).map(p => p.slug);
   assert.deepEqual(withLinks, []);
+});
+
+// ── Выбор поста дня: догон пропущенных дней ──────────────────────────────────
+// GitHub двигает запуски на часы и пропускает дни целиком. Раньше пропущенный
+// день терялся навсегда, теперь очередь догоняет себя сама.
+
+const THREE = [
+  { slug: 'a', date: '2026-09-01' },
+  { slug: 'b', date: '2026-09-02' },
+  { slug: 'c', date: '2026-09-03' },
+];
+const sent = at => ({ tg: 'tg-link', vk: 'vk-link', at });
+
+test('pickPost: обычный день — берёт пост этого дня', () => {
+  const state = { a: sent('2026-09-01') };
+  assert.equal(pickPost(THREE, state, '2026-09-02')?.slug, 'b');
+});
+
+test('pickPost: пропущенный день догоняется, а не теряется', () => {
+  // 2 сентября запуска не было — 3-го числа должен выйти пост за 2-е.
+  assert.equal(pickPost(THREE, {}, '2026-09-03')?.slug, 'a');
+});
+
+test('pickPost: второй запуск в тот же день нового поста не начинает', () => {
+  const state = { a: sent('2026-09-03'), b: {} };
+  assert.equal(pickPost(THREE, state, '2026-09-03'), null);
+});
+
+test('pickPost: начатый сегодня пост дорабатывается', () => {
+  // Утром ушёл Telegram, ВК упал — вечерний заход обязан вернуться к нему.
+  const state = { a: { tg: 'tg-link', at: '2026-09-03' } };
+  assert.equal(pickPost(THREE, state, '2026-09-03')?.slug, 'a');
+});
+
+test('pickPost: будущие посты не трогаются', () => {
+  assert.equal(pickPost(THREE, {}, '2026-08-31'), null);
+});
+
+test('pickPost: всё разослано — публиковать нечего', () => {
+  const state = { a: sent('2026-09-01'), b: sent('2026-09-02'), c: sent('2026-09-03') };
+  assert.equal(pickPost(THREE, state, '2026-09-04'), null);
 });

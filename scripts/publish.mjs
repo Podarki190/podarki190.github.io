@@ -154,15 +154,43 @@ async function readState() {
   }
 }
 
+// Пост дня — с догоном пропущенных. GitHub двигает запуски по расписанию на часы,
+// а иногда пропускает день целиком: 27.08.2026 запуска не было вовсе, 28.08 задача
+// вместо 10:00 ушла в 00:47 следующих суток. Раньше брали пост строго с сегодняшней
+// датой (`p.date === today`), и пропущенный день терялся навсегда, причём задача
+// при этом отчитывалась «успешно». Теперь берём самый старый наступивший пост,
+// который ещё не ушёл на ОБЕ площадки, — очередь догоняет себя сама.
+//
+// Не больше одного нового поста в сутки: GitHub умеет запустить задачу дважды
+// подряд (28.08.2026 — 21:47 и 21:49), и без этого накопленная очередь выстрелила
+// бы пачкой за пару минут. Уже начатый сегодня пост при этом дорабатывается —
+// если утром упал ВК, вечерний заход его дошлёт.
+export function pickPost(posts, state, today) {
+  const pending = posts
+    .filter(p => p.date <= today)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .find(p => {
+      const sent = state[p.slug] ?? {};
+      return !(sent.tg && sent.vk);
+    }) ?? null;
+  if (!pending) return null;
+
+  const startedToday = state[pending.slug]?.at === today;
+  const busyToday = Object.values(state).some(s => s?.at === today);
+  return busyToday && !startedToday ? null : pending;
+}
+
 async function main() {
   const today = moscowToday();
-  const post = POSTS.find(p => p.date === today);
+  const state = await readState();
+
+  const post = pickPost(POSTS, state, today);
   if (!post) {
-    log(`на ${today} записей нет — публиковать нечего`);
+    log(`на ${today} неопубликованных записей нет — публиковать нечего`);
     return;
   }
+  if (post.date !== today) log(`догоняю пропущенный день: ${post.date}`);
 
-  const state = await readState();
   const done = state[post.slug] ?? {};
   const baseUrl = (process.env.SITE_BASE_URL || 'https://lazerklin.ru').replace(/\/+$/, '');
   const url = `${baseUrl}/blog/${post.slug}/`;
@@ -212,6 +240,8 @@ async function main() {
   }
 
   if (!dryRun) {
+    // Дата захода нужна ограничителю «один новый пост в сутки» из pickPost.
+    done.at = today;
     state[post.slug] = done;
     await writeFile(STATE_FILE, `${JSON.stringify(state, null, 2)}\n`);
   }
