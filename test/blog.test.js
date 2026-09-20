@@ -5,7 +5,7 @@ import { POSTS, BLOG_INDEX, publishedPosts } from '../src/blog.js';
 import { renderBlogIndex, renderBlogPost } from '../src/render.js';
 import { SERVICES } from '../src/services.js';
 
-import { tgCaption, tagged, pickPost } from '../scripts/publish.mjs';
+import { tgCaption, tagged, pickPost, queueDepth } from '../scripts/publish.mjs';
 
 const TG_CAPTION_LIMIT = 1024;
 const DZEN_TITLE_LIMIT = 140;
@@ -185,4 +185,18 @@ test('pickPost: будущие посты не трогаются', () => {
 test('pickPost: всё разослано — публиковать нечего', () => {
   const state = { a: sent('2026-09-01'), b: sent('2026-09-02'), c: sent('2026-09-03') };
   assert.equal(pickPost(THREE, state, '2026-09-04'), null);
+});
+
+// Пустая очередь неотличима от спокойного дня: задача отрабатывает и молчит.
+// С 11 по 20.09.2026 блог так и простоял девять дней. Глубина очереди — то,
+// по чему публикатор отличает «сегодня уже вышло» от «писать больше нечего».
+
+test('queueDepth: считает только неопубликованные записи от сегодня и дальше', () => {
+  const state = { a: sent('2026-09-01') };
+  assert.equal(queueDepth(THREE, state, '2026-09-02'), 2);
+});
+
+test('queueDepth: всё разослано — очередь пуста', () => {
+  const state = { a: sent('2026-09-01'), b: sent('2026-09-02'), c: sent('2026-09-03') };
+  assert.equal(queueDepth(THREE, state, '2026-09-04'), 0);
 });

@@ -180,15 +180,35 @@ export function pickPost(posts, state, today) {
   return busyToday && !startedToday ? null : pending;
 }
 
+// Сколько постов ещё впереди. Пустая очередь выглядит точно так же, как
+// спокойный день: задача отрабатывает, отчитывается «успешно» и ничего не
+// публикует. Так блог и промолчал с 11 по 20.09.2026 — девять дней никто не
+// знал, что записи кончились. Поэтому пустую очередь считаем поломкой: задача
+// падает, GitHub шлёт письмо, и это единственный сигнал, который доходит.
+export function queueDepth(posts, state, today) {
+  return posts.filter(p => {
+    const sent = state[p.slug] ?? {};
+    return p.date >= today && !(sent.tg && sent.vk);
+  }).length;
+}
+
+const QUEUE_WARN = 5;
+
 async function main() {
   const today = moscowToday();
   const state = await readState();
 
+  const depth = queueDepth(POSTS, state, today);
   const post = pickPost(POSTS, state, today);
   if (!post) {
+    if (depth === 0) {
+      throw new Error('очередь пуста: все записи блога опубликованы. '
+        + 'Пока в src/blog.js не появятся новые посты, блог молчит');
+    }
     log(`на ${today} неопубликованных записей нет — публиковать нечего`);
     return;
   }
+  if (depth <= QUEUE_WARN) log(`в очереди осталось записей: ${depth} — пора писать новую пачку`);
   if (post.date !== today) log(`догоняю пропущенный день: ${post.date}`);
 
   const done = state[post.slug] ?? {};
