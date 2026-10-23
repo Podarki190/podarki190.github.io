@@ -182,7 +182,8 @@ function pageShell({ title, description, body, prefix = '', scripts = [], versio
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(description)}">
 ${renderOpenGraph({ title, description, ...og })}
-<link rel="icon" href="${prefix}favicon.png${v}">${
+<link rel="icon" href="${prefix}favicon.svg${v}" type="image/svg+xml">
+<link rel="icon" href="${prefix}favicon.png${v}" sizes="64x64">${
   YANDEX_VERIFICATION ? `\n<meta name="yandex-verification" content="${YANDEX_VERIFICATION}">` : ''}${
   GOOGLE_VERIFICATION ? `\n<meta name="google-site-verification" content="${GOOGLE_VERIFICATION}">` : ''}
 <link rel="stylesheet" href="${prefix}style.css${v}">${head ? `
