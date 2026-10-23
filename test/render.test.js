@@ -328,3 +328,20 @@ test('every page declares itself as canonical, not the home page', () => {
   assert.equal(canon(renderIndexPage([product], '', { id: 'sport', label: 'Спорт' })), 'https://lazerklin.ru/tema/sport/');
   assert.equal(canon(renderIndexPage([product])), 'https://lazerklin.ru/');
 });
+
+// Картинку и цену в сниппет выдачи Яндекс берёт из og:image и разметки Product,
+// а вкладка «Товары» кормится фидом. Цена везде одна и та же.
+test('product page carries image and price for search snippets, feed matches', async () => {
+  const { renderYml } = await import('../src/feed.js');
+  const page = renderProductPage(product);
+  assert.match(page, /<meta property="og:image" content="https:\/\/basket-46\.wbbasket\.ru\/x\/images\/big\/1\.webp">/);
+  const ld = JSON.parse(page.match(/<script type="application\/ld\+json">(.*?)<\/script>/)[1]);
+  assert.equal(ld['@type'], 'Product');
+  assert.equal(ld.offers.price, 1890);
+  assert.equal(ld.image.length, 3);
+  const yml = renderYml([product], 'https://lazerklin.ru');
+  assert.match(yml, /<url>https:\/\/lazerklin\.ru\/tovar\/chasy-nastennye-lokomotiv-yaroslavl\/<\/url>/);
+  assert.match(yml, /<price>1890<\/price>/);
+  assert.equal((yml.match(/<picture>/g) || []).length, 3);
+  assert.match(yml, /Часы настенные &quot;Локомотив Ярославль&quot;/);
+});

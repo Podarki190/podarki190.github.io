@@ -81,19 +81,44 @@ export function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
+// Одна цена на всех: страница, разметка для поисковика и фид Яндекс Товаров
+// обязаны показывать одно и то же, иначе Яндекс снимает предложение.
+export function priceOf(product) {
+  if (isMug(product)) return { price: MUG_PRICE, old: MUG_ORIGINAL_PRICE };
+  return { price: isLayered(product) ? LAYERED_PRICE : SALE_PRICE, old: ORIGINAL_PRICE };
+}
+
 function renderPriceBlock(product) {
-  if (isMug(product)) {
-    return `<div class="price">
-      <span class="price-old">${MUG_ORIGINAL_PRICE} ₽</span>
-      <span class="price-new">${MUG_PRICE} ₽</span>
-      <div class="shipping">${SHIPPING_TEXT}</div>
-    </div>`;
-  }
+  const { price, old } = priceOf(product);
   return `<div class="price">
-      <span class="price-old">${ORIGINAL_PRICE} ₽</span>
-      <span class="price-new">${isLayered(product) ? LAYERED_PRICE : SALE_PRICE} ₽</span>
+      <span class="price-old">${old} ₽</span>
+      <span class="price-new">${price} ₽</span>
       <div class="shipping">${SHIPPING_TEXT}</div>
     </div>`;
+}
+
+// Разметка товара для поисковика: из неё Яндекс и Google берут картинку и цену
+// в сниппет выдачи. Без неё мы стоим в выдаче голой строкой, а соседи с фото.
+function productJsonLd(product) {
+  const { price } = priceOf(product);
+  const data = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    image: product.photos?.length ? product.photos : [product.photo],
+    description: truncate(product.description, 500),
+    sku: String(product.nmId),
+    brand: { '@type': 'Brand', name: SITE_NAME },
+    offers: {
+      '@type': 'Offer',
+      url: `${SITE_URL}/tovar/${product.slug}/`,
+      price,
+      priceCurrency: 'RUB',
+      availability: 'https://schema.org/InStock',
+    },
+  };
+  const json = JSON.stringify(data).replace(/</g, '\\u003c');
+  return `<script type="application/ld+json">${json}</script>`;
 }
 
 function renderOrderButtons(product) {
@@ -126,7 +151,8 @@ function renderCard(product, hrefPrefix = 'tovar/') {
 // не находит картинку для карточки. Адреса тут обязаны быть абсолютными:
 // относительный путь соцсеть не разрешит, ей неоткуда знать наш домен.
 function renderOpenGraph({ title, description, path: ogPath = '', image = '', type = 'website' }) {
-  const abs = (p) => `${SITE_URL}/${String(p).replace(/^\/+/, '')}`;
+  // Фото товаров лежат на серверах WB — их адрес уже абсолютный.
+  const abs = (p) => /^https?:/.test(p) ? p : `${SITE_URL}/${String(p).replace(/^\/+/, '')}`;
   return [
     `<meta property="og:type" content="${type}">`,
     `<meta property="og:site_name" content="${SITE_NAME}">`,
@@ -543,6 +569,7 @@ ${renderSimilar(neighbours.similar)}`;
     prefix: '../../',
     scripts: ['order-form.js', 'product-nav.js'],
     version,
-    og: { path: `tovar/${product.slug}/` },
+    og: { path: `tovar/${product.slug}/`, image: product.photos?.[0] ?? product.photo, type: 'product' },
+    head: productJsonLd(product),
   });
 }

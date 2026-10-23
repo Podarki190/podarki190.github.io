@@ -11,6 +11,7 @@ import {
   renderServicesIndex, renderServicePage, renderBlogIndex, renderBlogPost,
 } from './render.js';
 import { renderSitemap, renderRobotsTxt } from './sitemap.js';
+import { renderYml } from './feed.js';
 import { SITE_URL } from './links.js';
 import { PAGES, WORKS_PHOTOS } from './pages.js';
 import { BLOG_INDEX, publishedPosts } from './blog.js';
@@ -141,6 +142,7 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
     themePages.push(`tema/${theme.id}`);
   }
 
+  await writeFile(path.join(outDir, 'feed.yml'), renderYml(products, baseUrl));
   await writeFile(
     path.join(outDir, 'sitemap.xml'),
     renderSitemap(products, baseUrl, [
