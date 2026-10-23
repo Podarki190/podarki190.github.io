@@ -318,3 +318,13 @@ test('в группах нет ссылок на несуществующие у
   const broken = SERVICE_GROUPS.flatMap(g => g.slugs).filter(slug => !known.has(slug));
   assert.deepEqual(broken, []);
 });
+
+// Canonical на главную у страницы товара говорит поисковику «я копия главной»,
+// и он выкидывает страницу из индекса. Так два месяца стояли все 5400 товаров.
+test('every page declares itself as canonical, not the home page', () => {
+  const canon = (html) => html.match(/<link rel="canonical" href="([^"]+)">/)[1];
+  assert.equal(canon(renderProductPage(product)), `https://lazerklin.ru/tovar/${product.slug}/`);
+  assert.equal(canon(renderStaticPage(PAGES[0])), `https://lazerklin.ru/${PAGES[0].slug}/`);
+  assert.equal(canon(renderIndexPage([product], '', { id: 'sport', label: 'Спорт' })), 'https://lazerklin.ru/tema/sport/');
+  assert.equal(canon(renderIndexPage([product])), 'https://lazerklin.ru/');
+});

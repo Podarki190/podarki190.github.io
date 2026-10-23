@@ -235,6 +235,7 @@ ${products.map(p => renderCard(p, `${prefix}tovar/`)).join('\n')}
     scripts: ['search.js'],
     version,
     current: theme ? '' : 'index',
+    og: { path: theme ? `tema/${theme.id}/` : '' },
   });
 }
 
@@ -249,6 +250,7 @@ ${page.body}
     prefix,
     version,
     current: page.slug,
+    og: { path: `${page.slug}/` },
   });
 }
 
@@ -301,6 +303,7 @@ export function renderServicesIndex(version = '') {
     prefix: '../',
     version,
     current: SERVICES_INDEX.slug,
+    og: { path: `${SERVICES_INDEX.slug}/` },
   });
 }
 
@@ -540,5 +543,6 @@ ${renderSimilar(neighbours.similar)}`;
     prefix: '../../',
     scripts: ['order-form.js', 'product-nav.js'],
     version,
+    og: { path: `tovar/${product.slug}/` },
   });
 }
