@@ -42,6 +42,9 @@ export const SALE_PRICE = 1890;
 export const MUG_ORIGINAL_PRICE = 1500;
 export const MUG_PRICE = 749;
 export const LAYERED_PRICE = 2690;
+// Ёлочные шары с именами (24.10.2026): на Озоне 299 при зачёркнутой 500, у себя — 149.
+export const SHAR_ORIGINAL_PRICE = 500;
+export const SHAR_PRICE = 149;
 export const SHIPPING_TEXT = 'Доставка по всей России Бесплатная';
 
 // Куда уходит заказ с сайта: веб-приложение Apps Script пишет строку в
@@ -70,6 +73,10 @@ export function buildMaxLink() {
 
 export function buildWbLink(nmId) {
   return `https://www.wildberries.ru/catalog/${nmId}/detail.aspx`;
+}
+
+export function buildOzonLink(sku) {
+  return `https://www.ozon.ru/product/${sku}/`;
 }
 
 export function buildCardWhatsAppMessage(name, nmId) {

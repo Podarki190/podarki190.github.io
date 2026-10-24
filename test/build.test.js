@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { SHARY } from '../src/shary.js';
 import { buildSite, postAssets } from '../src/build.js';
 import { POSTS } from '../src/blog.js';
 import { isBlocked } from '../src/blocked.js';
@@ -37,7 +38,17 @@ test('buildSite writes index, one page per product with a photo, sitemap and rob
     fetchFn,
   });
 
-  assert.equal(count, 2);
+  assert.equal(count, 2 + SHARY.length);
+
+  // ёлочные шары: после часов, своя цена, без кнопки WB, фото скопированы в сборку
+  const shar = SHARY[0];
+  const sharPage = await readFile(path.join(outDir, 'tovar', shar.slug, 'index.html'), 'utf8');
+  assert.match(sharPage, /149 ₽/);
+  assert.doesNotMatch(sharPage, /Купить на WB/);
+  await readFile(path.join(outDir, 'shary', 'p', `${shar.slug}_1.jpg`));
+  const cat = JSON.parse(await readFile(path.join(outDir, 'catalog.json'), 'utf8'));
+  assert.deepEqual(cat.at(-1).slice(3), [SHARY.at(-1).photo, 3]);
+  assert.equal(cat.findIndex(r => r[4] === 3), 2, 'шары идут после всех часов');
 
   const index = await readFile(path.join(outDir, 'index.html'), 'utf8');
   assert.match(index, /Часы А/);

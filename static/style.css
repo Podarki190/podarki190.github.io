@@ -95,6 +95,7 @@ a { color: var(--brass-deep); }
 .btn-max { background: #7C4DFF; }
 .btn-tg { background: #229ED9; }
 .btn-wb { background: #CB11AB; }
+.btn-ozon { background: #005BFF; }
 .btn-order { background: var(--pine); font-size: 1.1rem; padding: 0.85rem 1.1rem; }
 .order-alt { margin: 0.2rem 0 0; font-size: 0.85rem; color: var(--ink-muted); }
 .messengers-note { margin: 0.5rem 0 0; font-size: 0.85rem; color: var(--ink-muted); }
@@ -117,6 +118,7 @@ a { color: var(--brass-deep); }
 }
 .gallery-hint { font-size: 0.85rem; color: var(--ink-muted); margin: 0.4rem 0 0; }
 .description { line-height: 1.55; }
+.description.pre { white-space: pre-line; }
 
 
 /* ── похожие товары ────────────────────────────────────────── */

@@ -2,6 +2,7 @@ import {
   SITE_URL,
   PHONE, PHONES, ORIGINAL_PRICE, SALE_PRICE, LAYERED_PRICE, SHIPPING_TEXT, ORDER_ENDPOINT,
   METRIKA_ID, YANDEX_VERIFICATION, GOOGLE_VERIFICATION, MUG_PRICE, MUG_ORIGINAL_PRICE,
+  SHAR_PRICE, SHAR_ORIGINAL_PRICE, buildOzonLink,
   formatPhone, buildTelLink, buildWhatsAppLink, buildTelegramLink, buildMaxLink, buildWbLink,
   buildCardWhatsAppMessage, truncate, renderSocials,
 } from './links.js';
@@ -84,6 +85,7 @@ export function escapeHtml(str) {
 // Одна цена на всех: страница, разметка для поисковика и фид Яндекс Товаров
 // обязаны показывать одно и то же, иначе Яндекс снимает предложение.
 export function priceOf(product) {
+  if (product.shar) return { price: SHAR_PRICE, old: SHAR_ORIGINAL_PRICE };
   if (isMug(product)) return { price: MUG_PRICE, old: MUG_ORIGINAL_PRICE };
   return { price: isLayered(product) ? LAYERED_PRICE : SALE_PRICE, old: ORIGINAL_PRICE };
 }
@@ -93,7 +95,7 @@ function renderPriceBlock(product) {
   return `<div class="price">
       <span class="price-old">${old} ₽</span>
       <span class="price-new">${price} ₽</span>
-      <div class="shipping">${SHIPPING_TEXT}</div>
+      ${product.shar ? '' : `<div class="shipping">${SHIPPING_TEXT}</div>`}
     </div>`;
 }
 
@@ -128,7 +130,9 @@ function renderOrderButtons(product) {
       <a class="btn btn-wa" href="${escapeHtml(buildWhatsAppLink(waMsg))}" target="_blank" rel="noopener">Написать в WhatsApp</a>
       <a class="btn btn-max" href="${buildMaxLink()}" target="_blank" rel="noopener">Написать в Макс</a>
       <a class="btn btn-tg" href="${buildTelegramLink()}" target="_blank" rel="noopener">Telegram</a>
-      <a class="btn btn-wb" href="${buildWbLink(product.nmId)}" target="_blank" rel="noopener">Купить на WB</a>
+      ${product.shar
+        ? (product.ozon ? `<a class="btn btn-ozon" href="${buildOzonLink(product.ozon)}" target="_blank" rel="noopener">Купить на Озон</a>` : '')
+        : `<a class="btn btn-wb" href="${buildWbLink(product.nmId)}" target="_blank" rel="noopener">Купить на WB</a>`}
     </div>`;
 }
 
@@ -559,7 +563,7 @@ export function renderProductPage(product, version = '', neighbours = {}) {
       <button class="btn btn-tg" type="submit" data-target="telegram">Отправить в Telegram</button>
     </form>
     <section id="order-done" class="order-done" hidden></section>
-    <p class="description">${escapeHtml(product.description)}</p>
+    <p class="description${product.shar ? ' pre' : ''}">${escapeHtml(product.description)}</p>
   </div>
 </article>
 ${renderSimilar(neighbours.similar)}`;

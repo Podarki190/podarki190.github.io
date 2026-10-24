@@ -1,4 +1,4 @@
-import { mkdir, writeFile, copyFile, readFile } from 'node:fs/promises';
+import { mkdir, writeFile, copyFile, readFile, cp } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -6,6 +6,7 @@ import { fetchAllClockProducts } from './wbCatalog.js';
 import { assignSlugs, } from './slug.js';
 import { isBlocked } from './blocked.js';
 import { isMug } from './wbCatalog.js';
+import { SHARY } from './shary.js';
 import {
   renderIndexPage, renderProductPage, renderStaticPage,
   renderServicesIndex, renderServicePage, renderBlogIndex, renderBlogPost,
@@ -47,11 +48,12 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
   if (allowed.length < fetched.length) {
     console.log(`снято по правам: ${fetched.length - allowed.length} товаров`);
   }
-  const products = assignSlugs(allowed);
+  // Шары — в самый конец: после всех часов, на главную (первые 300) не попадают.
+  const products = [...assignSlugs(allowed), ...SHARY];
 
   // Пустой каталог = сломанный API, а не «товары кончились». Лучше упасть и
   // оставить опубликованной предыдущую версию сайта, чем выложить пустую витрину.
-  if (products.length === 0) {
+  if (products.length === SHARY.length) {
     throw new Error('WB вернул пустой каталог — сборка отменена');
   }
 
@@ -94,8 +96,9 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
       p.nmId,
       p.name,
       p.slug,
-      Number((p.photo.match(/basket-(\d+)/) || [])[1] || 0),
-      isMug(p) ? 2 : isLayered(p) ? 1 : 0,
+      // у шаров фото не на WB — кладём адрес целиком
+      p.shar ? p.photo : Number((p.photo.match(/basket-(\d+)/) || [])[1] || 0),
+      p.shar ? 3 : isMug(p) ? 2 : isLayered(p) ? 1 : 0,
     ])),
   );
 
@@ -142,7 +145,8 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
     themePages.push(`tema/${theme.id}`);
   }
 
-  await writeFile(path.join(outDir, 'feed.yml'), renderYml(products, baseUrl));
+  // В фиде Яндекс Товаров всё лежит в категории часов — шарам там не место.
+  await writeFile(path.join(outDir, 'feed.yml'), renderYml(products.filter(p => !p.shar), baseUrl));
   await writeFile(
     path.join(outDir, 'sitemap.xml'),
     renderSitemap(products, baseUrl, [
@@ -175,6 +179,7 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
     const subdir = ['uslugi', 'raboty'].find(d => source.pathname.includes(`/static/${d}/`));
     await copyFile(source, subdir ? path.join(outDir, subdir, name) : path.join(outDir, name));
   }
+  await cp(new URL('../static/shary', import.meta.url), path.join(outDir, 'shary'), { recursive: true });
 
   return products.length;
 }

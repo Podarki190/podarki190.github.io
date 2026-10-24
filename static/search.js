@@ -1,5 +1,6 @@
 import {
   ORIGINAL_PRICE, SALE_PRICE, LAYERED_PRICE, MUG_PRICE, MUG_ORIGINAL_PRICE, SHIPPING_TEXT,
+  SHAR_PRICE, SHAR_ORIGINAL_PRICE,
 } from './links.js';
 
 const input = document.getElementById('search');
@@ -43,13 +44,15 @@ const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, 
 
 // Фото лежит по предсказуемому адресу: меняются только номер сервера, том и
 // часть — всё считается из номера товара.
-const photoUrl = ({ id, basket }) =>
+// У ёлочных шаров фото не на WB — на их месте сразу адрес.
+const photoUrl = ({ id, basket }) => typeof basket === 'string' ? basket :
   `https://basket-${basket}.wbbasket.ru/vol${Math.floor(id / 1e5)}/part${Math.floor(id / 1e3)}/${id}/images/big/1.webp`;
 
 const PRICES = [
   [ORIGINAL_PRICE, SALE_PRICE],       // обычные часы
   [ORIGINAL_PRICE, LAYERED_PRICE],    // двухслойные
   [MUG_ORIGINAL_PRICE, MUG_PRICE],    // кружки
+  [SHAR_ORIGINAL_PRICE, SHAR_PRICE],  // ёлочные шары
 ];
 
 function tile(item) {
@@ -62,7 +65,7 @@ function tile(item) {
     <div class="price">
       <span class="price-old">${was} ₽</span>
       <span class="price-new">${now} ₽</span>
-      <div class="shipping">${SHIPPING_TEXT}</div>
+      ${item.kind === 3 ? '' : `<div class="shipping">${SHIPPING_TEXT}</div>`}
     </div>
   </article>`;
 }
