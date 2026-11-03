@@ -17,6 +17,25 @@
 
 ## Сделано
 
+**Новая пачка постов (02.11.2026, сессия DeepSeek).** Очередь блога была пуста —
+ежедневный workflow падал «очередь пуста» с 20.10. Написал 6 постов в `src/blog.js`
+(стиль как у `chasy-mihail-krug`/`znachki-pozhelaniya`, утверждённый Павлом):
+фото уже разложены в `static/blog/<slug>/{1,2,3}.jpg` + `og.jpg`, прогнаны через
+`prep.py`/`ogimage.py`. Все 20 тестов блога зелёные.
+
+Даты и слаги (пн/ср/пт после 20.10):
+- 04.11 `kareta-svadebnaya` — свадебная ажурная карета (услуги monogrammy, gravirovka-po-derevu)
+- 06.11 `chasy-pticy-na-vetke` — часы «Птицы на ветке» (chasy-na-zakaz, monogrammy)
+- 09.11 `panno-chasy-uchitelnice` — панно с часами учительнице (chasy-na-zakaz, gravirovka-po-derevu)
+- 11.11 `obemnye-bukvy-penoplast` — объёмные буквы из пенопласта (obemnye-bukvy, rezka-penoplasta)
+- 13.11 `podstavki-napitki-tank-samolet` — подставки «танк и самолёт» (podarki-muzhchinam, rezka-fanery)
+- 16.11 `chasy-skripichnyy-klyuch` — часы «Скрипичный ключ» (chasy-na-zakaz, gravirovka-po-derevu)
+
+Обдуманно пропущены (не писал): оборудование (продано), печати/штампы (нецензурная
+надпись), «Часы Добби свободен» (Гарри Поттер), портреты (лица), военные/политические
+(МЧС, ВДВ, КГБ, Морская пехота, Афган, Пограничные, Крым наш), группы (Rammstein, Louna,
+Ария, Пикник, Сектор Газа), «Спартак Москва». См. также память `wb-blog-pipeline`.
+
 **Домен и продвижение.** `lazerklin.ru` зарегистрирован в Бегете (до 18.08.2027),
 DNS на GitHub Pages, HTTPS работает. Права подтверждены в Яндекс.Вебмастере
 (файл `yandex_647c4b8adf060779.html`) и в Google Search Console (доменный ресурс,

@@ -146,7 +146,9 @@ export async function buildSite({ wbToken, baseUrl, outDir, fetchFn = fetch }) {
   }
 
   // В фиде Яндекс Товаров всё лежит в категории часов — шарам там не место.
-  await writeFile(path.join(outDir, 'feed.yml'), renderYml(products.filter(p => !p.shar), baseUrl));
+  const ymlFeed = renderYml(products.filter(p => !p.shar), baseUrl);
+  await writeFile(path.join(outDir, 'feed.yml'), ymlFeed);
+  await writeFile(path.join(outDir, 'feed.xml'), ymlFeed);
   await writeFile(
     path.join(outDir, 'sitemap.xml'),
     renderSitemap(products, baseUrl, [
